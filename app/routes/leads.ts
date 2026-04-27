@@ -6,9 +6,11 @@ import {
   auditLog,
   leads,
   leadSourceEvents,
+  outboundMessages,
   type AuditLogRow,
   type Lead,
   type LeadSourceEvent,
+  type OutboundMessage,
 } from '../db/schema.js';
 import { generateUuidV7 } from '../lib/uuid.js';
 import { normalizeToE164 } from '../lib/e164.js';
@@ -20,10 +22,12 @@ import {
   leadDetailPage,
   leadSummaryCard,
   notFoundPage,
+  outboundStatusCard,
   responseRegion,
 } from '../views/pages/lead-detail.html.js';
 import { demoUserMiddleware, type DemoUser, type DemoUserVariables } from '../middleware/demo-user.js';
 import { generateResponse } from '../services/response-generator.service.js';
+import { dispatchLead } from '../services/outbound-dispatcher.service.js';
 
 export const leadsRoute = new Hono<{ Variables: DemoUserVariables }>();
 
@@ -53,6 +57,16 @@ function loadSourceEvents(leadId: string): LeadSourceEvent[] {
     .where(eq(leadSourceEvents.leadId, leadId))
     .orderBy(asc(leadSourceEvents.receivedAt))
     .all() as LeadSourceEvent[];
+}
+
+function loadOutboundMessages(leadId: string): OutboundMessage[] {
+  const db = getDb();
+  return db
+    .select()
+    .from(outboundMessages)
+    .where(eq(outboundMessages.leadId, leadId))
+    .orderBy(asc(outboundMessages.createdAt))
+    .all() as OutboundMessage[];
 }
 
 function getReviewQueueCount(): number {
@@ -141,7 +155,13 @@ leadsRoute.get('/leads/:id', (c) => {
   }
   const auditEvents = loadAuditEvents(id);
   const sourceEvents = loadSourceEvents(id);
-  const body = leadDetailPage({ lead, auditEvents, sourceEvents });
+  const outboundMessagesRows = loadOutboundMessages(id);
+  const body = leadDetailPage({
+    lead,
+    auditEvents,
+    sourceEvents,
+    outboundMessages: outboundMessagesRows,
+  });
   return c.html(
     baseLayout({
       title: lead.customerName ?? 'Lead detail',
@@ -333,6 +353,46 @@ leadsRoute.post('/leads/:id/regenerate-response', async (c) => {
   const { text, kind } = describeRegenerationResult(updated);
   return c.html(responseAndSummary(updated, text, kind));
 });
+
+leadsRoute.post('/leads/:id/dispatch-now', async (c) => {
+  const id = c.req.param('id');
+  const lead = loadLead(id);
+  if (!lead) return c.json({ error: 'lead_not_found' }, 404);
+  if (lead.status !== 'auto_sent' && lead.status !== 'manually_sent') {
+    return c.json({ error: 'invalid_status', status: lead.status }, 409);
+  }
+
+  let dispatchResult;
+  try {
+    dispatchResult = await dispatchLead(id);
+  } catch (err) {
+    logger.error({ err, leadId: id }, 'manual dispatch failed');
+    return c.json({ error: 'dispatch_failed' }, 500);
+  }
+
+  const messages = loadOutboundMessages(id);
+  const updated = loadLead(id) as Lead;
+  return c.html(
+    honoHtml`${outboundStatusCard(updated, messages)}${flashOob(
+      describeDispatchResult(dispatchResult),
+      dispatchResult.emailSent || dispatchResult.smsSent ? 'success' : 'error',
+    )}`,
+  );
+});
+
+function describeDispatchResult(r: { emailSent: boolean; smsSent: boolean; arboStarSynced: boolean; skipped?: boolean; reason?: string }): string {
+  if (r.skipped) {
+    return `Dispatch skipped: ${r.reason ?? 'unknown'}.`;
+  }
+  const channels: string[] = [];
+  if (r.emailSent) channels.push('email');
+  if (r.smsSent) channels.push('SMS/iMessage');
+  if (channels.length === 0) {
+    return 'Dispatch failed: no channels succeeded.';
+  }
+  const arboNote = r.arboStarSynced ? ', synced to ArboStar' : '';
+  return `Sent via ${channels.join(' + ')}${arboNote}.`;
+}
 
 function describeRegenerationResult(lead: Lead): { text: string; kind: 'success' | 'info' | 'error' } {
   if (lead.status === 'auto_sent') {

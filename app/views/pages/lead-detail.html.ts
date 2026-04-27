@@ -1,5 +1,5 @@
 import { html, raw } from 'hono/html';
-import type { AuditLogRow, Lead, LeadSourceEvent } from '../../db/schema.js';
+import type { AuditLogRow, Lead, LeadSourceEvent, OutboundMessage } from '../../db/schema.js';
 import {
   formatDateET,
   formatPhone,
@@ -9,11 +9,14 @@ import {
 } from '../../lib/format.js';
 import { confidenceBadge } from '../partials/confidence-badge.html.js';
 import { statusBadge } from '../partials/status-badge.html.js';
+import { auditTimeline } from '../partials/audit-event.html.js';
+import { sourceEventList } from '../partials/source-event.html.js';
 
 export interface LeadDetailPageData {
   lead: Lead;
   auditEvents: AuditLogRow[];
   sourceEvents: LeadSourceEvent[];
+  outboundMessages?: OutboundMessage[];
 }
 
 function escapeHtml(s: string): string {
@@ -238,7 +241,83 @@ export function extractedDataRegion(lead: Lead) {
   return html`<div id="extracted-data-region">${extractedDataCard(lead)}</div>`;
 }
 
-export function leadDetailPage({ lead, auditEvents, sourceEvents }: LeadDetailPageData) {
+function outboundStatusBadge(status: string) {
+  const cls =
+    status === 'sent'
+      ? 'bg-green-100 text-green-800'
+      : status === 'queued'
+        ? 'bg-amber-100 text-amber-800'
+        : status === 'failed'
+          ? 'bg-red-100 text-red-800'
+          : 'bg-slate-200 text-slate-700';
+  return html`<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs ${cls}" data-testid="outbound-status-${status}">${status}</span>`;
+}
+
+export function outboundStatusCard(lead: Lead, messages: OutboundMessage[]) {
+  const showCard = lead.status === 'auto_sent' || lead.status === 'manually_sent' || messages.length > 0;
+  if (!showCard) {
+    return html`<div id="outbound-status-region"></div>`;
+  }
+  const allFailed = messages.length > 0 && messages.every((m) => m.status === 'failed');
+  return html`<div id="outbound-status-region">
+    <div class="pts-card mt-4" data-testid="outbound-status-card" data-lead-id="${lead.id}">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Outbound Status</h2>
+        ${lead.arbostarRequestId
+          ? html`<span class="text-xs text-slate-600" data-testid="arbostar-request-id">
+              ArboStar: <code class="bg-slate-100 px-1 rounded">${lead.arbostarRequestId}</code>
+            </span>`
+          : html`<span class="text-xs text-slate-500" data-testid="arbostar-not-synced">ArboStar: not synced</span>`}
+      </div>
+      ${messages.length === 0
+        ? html`<p class="mt-3 text-sm text-slate-500" data-testid="outbound-empty">
+            No outbound messages dispatched yet.
+          </p>`
+        : html`<ul class="mt-3 space-y-2 text-sm" data-testid="outbound-messages">
+            ${messages.map(
+              (m) => html`<li
+                class="flex items-start justify-between gap-3 border-l-2 border-slate-200 pl-3"
+                data-testid="outbound-message"
+                data-channel="${m.channel}"
+                data-status="${m.status}"
+              >
+                <div>
+                  <div class="font-medium text-slate-800">${m.channel} → ${m.recipient}</div>
+                  <div class="text-xs text-slate-500">
+                    ${m.sentAt ? `sent ${formatTimeAgo(m.sentAt)}` : 'queued'}
+                    ${m.providerMessageId
+                      ? html` · <code class="text-xs text-slate-500">${m.providerMessageId}</code>`
+                      : ''}
+                  </div>
+                  ${m.errorMessage
+                    ? html`<div class="text-xs text-red-700">${m.errorMessage}</div>`
+                    : ''}
+                </div>
+                <div>${outboundStatusBadge(m.status)}</div>
+              </li>`,
+            )}
+          </ul>`}
+      ${allFailed
+        ? html`<div class="mt-3">
+            <button
+              class="pts-btn-secondary"
+              data-testid="retry-dispatch-btn"
+              hx-post="/leads/${lead.id}/dispatch-now"
+              hx-target="#outbound-status-region"
+              hx-swap="outerHTML"
+            >Retry dispatch</button>
+          </div>`
+        : ''}
+    </div>
+  </div>`;
+}
+
+export function leadDetailPage({
+  lead,
+  auditEvents,
+  sourceEvents,
+  outboundMessages,
+}: LeadDetailPageData) {
   return html`<section data-testid="lead-detail-page" data-lead-id="${lead.id}">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
       <div>
@@ -265,38 +344,24 @@ export function leadDetailPage({ lead, auditEvents, sourceEvents }: LeadDetailPa
       ${responseRegion(lead)}
     </div>
 
-    <details class="mt-4 pts-card" data-testid="audit-trail">
-      <summary class="cursor-pointer text-sm font-semibold text-slate-700">Audit trail (${auditEvents.length})</summary>
-      <ol class="mt-3 space-y-2 text-sm">
-        ${auditEvents.length === 0
-          ? html`<li class="text-slate-500">No audit events yet.</li>`
-          : auditEvents.map(
-              (e) => html`<li class="border-l-2 border-slate-200 pl-3" data-testid="audit-event">
-                <div class="flex items-center justify-between">
-                  <span class="font-medium text-slate-800">${e.action}</span>
-                  <span class="text-xs text-slate-500">${formatDateET(e.createdAt)}</span>
-                </div>
-                <div class="text-xs text-slate-500">actor: ${e.actor}</div>
-                ${e.details
-                  ? html`<pre class="mt-1 overflow-x-auto rounded bg-slate-50 p-2 text-xs text-slate-700">${escapeHtml(e.details)}</pre>`
-                  : ''}
-              </li>`,
-            )}
-      </ol>
+    ${outboundStatusCard(lead, outboundMessages ?? [])}
+
+    <details class="mt-4 pts-card" data-testid="audit-trail" open>
+      <summary class="cursor-pointer text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-500" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Audit trail
+        <span class="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold h-5 min-w-5 px-1.5">${auditEvents.length}</span>
+      </summary>
+      <div class="mt-3">${auditTimeline(auditEvents)}</div>
     </details>
 
     <details class="mt-4 pts-card" data-testid="original-payload">
-      <summary class="cursor-pointer text-sm font-semibold text-slate-700">Original payload (${sourceEvents.length})</summary>
-      <div class="mt-3 space-y-3">
-        ${sourceEvents.length === 0
-          ? html`<p class="text-sm text-slate-500">No source events recorded.</p>`
-          : sourceEvents.map(
-              (s) => html`<div data-testid="source-event">
-                <div class="text-xs text-slate-500">${s.source} · ${formatDateET(s.receivedAt)}</div>
-                <pre class="mt-1 overflow-x-auto rounded bg-slate-50 p-2 text-xs text-slate-700">${escapeHtml(s.rawPayload)}</pre>
-              </div>`,
-            )}
-      </div>
+      <summary class="cursor-pointer text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-500" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 8h16M8 4v16"/></svg>
+        Original payload
+        <span class="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold h-5 min-w-5 px-1.5">${sourceEvents.length}</span>
+      </summary>
+      <div class="mt-3">${sourceEventList(sourceEvents)}</div>
     </details>
   </section>`;
 }

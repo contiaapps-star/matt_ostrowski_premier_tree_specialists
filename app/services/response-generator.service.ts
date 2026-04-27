@@ -7,8 +7,12 @@ import { type FaqEntry, type Lead, auditLog, leads } from '../db/schema.js';
 import { generateUuidV7 } from '../lib/uuid.js';
 import { logger } from '../lib/logger.js';
 import { createOpenRouterClient, type OpenRouterClient } from '../clients/openrouter.client.js';
+import type { ArboStarClient } from '../clients/arbostar.client.js';
+import type { EmailClient } from '../clients/sendgrid.client.js';
+import type { SmsClient } from '../clients/agent-phone.client.js';
 import { detectEscalation } from './escalation-detector.service.js';
 import { findRelevantFaqs } from './faq-matcher.service.js';
+import { dispatchLead, type DispatchResult } from './outbound-dispatcher.service.js';
 
 type DrizzleDb = BetterSQLite3Database<typeof schema>;
 
@@ -27,6 +31,7 @@ export interface ResponseGenerationResult {
   llmConfidence?: number;
   responseTextSet?: boolean;
   escalationTriggered?: boolean;
+  dispatch?: DispatchResult;
 }
 
 interface LlmResponse {
@@ -118,6 +123,11 @@ interface GenerateDeps {
   llm?: OpenRouterClient;
   now?: () => Date;
   cfg?: Config;
+  emailClient?: EmailClient;
+  smsClient?: SmsClient;
+  arboStarClient?: ArboStarClient;
+  /** Skip the inline auto-dispatch hook (testing / batch jobs that dispatch separately). */
+  skipAutoDispatch?: boolean;
 }
 
 function persistEscalation(
@@ -211,6 +221,7 @@ interface PersistSuccessInput {
 
 function persistSuccess(db: DrizzleDb, input: PersistSuccessInput): void {
   const reasoningSuffix = ` (final=${input.finalConfidence}, llm=${input.llmConfidence}, data_completeness=${input.dataCompleteness})`;
+  const isAutoSent = input.finalStatus === 'auto_sent';
   db.transaction((tx) => {
     tx.update(leads)
       .set({
@@ -220,6 +231,9 @@ function persistSuccess(db: DrizzleDb, input: PersistSuccessInput): void {
         confidenceReasoning: `${input.reasoning}${reasoningSuffix}`,
         escalationTriggered: input.escalationTriggered,
         escalationReason: input.escalationReason,
+        ...(isAutoSent
+          ? { responseSentAt: input.now, responseSentBy: 'auto' }
+          : {}),
         updatedAt: input.now,
       })
       .where(eq(leads.id, input.leadId))
@@ -379,6 +393,22 @@ export async function generateResponse(
     now: now(),
   });
 
+  let dispatchResult: DispatchResult | undefined;
+  if (finalStatus === 'auto_sent' && deps.skipAutoDispatch !== true) {
+    try {
+      dispatchResult = await dispatchLead(leadId, {
+        db,
+        cfg,
+        now,
+        emailClient: deps.emailClient,
+        smsClient: deps.smsClient,
+        arboStarClient: deps.arboStarClient,
+      });
+    } catch (err) {
+      logger.error({ err, leadId }, 'auto-dispatch hook failed');
+    }
+  }
+
   return {
     leadId,
     status: finalStatus,
@@ -386,6 +416,7 @@ export async function generateResponse(
     llmConfidence,
     responseTextSet: finalResponseText !== null,
     escalationTriggered: finalEscalationTriggered ?? false,
+    dispatch: dispatchResult,
   };
 }
 

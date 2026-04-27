@@ -3,6 +3,7 @@ import { config } from '../../config.js';
 import { logger } from '../../lib/logger.js';
 import { processIngestedLeads } from '../../services/extraction-batch.service.js';
 import { processExtractedLeads } from '../../services/response-batch.service.js';
+import { dispatchPendingLeads } from '../../services/outbound-batch.service.js';
 
 export const adminRoute = new Hono();
 
@@ -36,6 +37,20 @@ adminRoute.post('/generate-responses', async (c) => {
     return c.json(result, 200);
   } catch (err) {
     logger.error({ err }, 'generate-responses failed');
+    return c.json({ error: 'internal_server_error' }, 500);
+  }
+});
+
+adminRoute.post('/dispatch-batch', async (c) => {
+  if (!authorize(c.req.header('x-admin-token'))) {
+    return c.json({ error: 'unauthorized' }, 401);
+  }
+
+  try {
+    const result = await dispatchPendingLeads();
+    return c.json(result, 200);
+  } catch (err) {
+    logger.error({ err }, 'dispatch-batch failed');
     return c.json({ error: 'internal_server_error' }, 500);
   }
 });
