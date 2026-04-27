@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "lib": ["ES2022"],
+    "outDir": "./dist",
+    "rootDir": "./app",
+    "baseUrl": "./app",
+    "paths": {
+      "@/*": ["*"],
+      "@routes/*": ["routes/*"],
+      "@services/*": ["services/*"],
+      "@clients/*": ["clients/*"],
+      "@db/*": ["db/*"],
+      "@views/*": ["views/*"],
+      "@middleware/*": ["middleware/*"],
+      "@lib/*": ["lib/*"]
+    },
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "sourceMap": true,
+    "removeComments": false,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false
+  },
+  "include": ["app/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests"]
+}

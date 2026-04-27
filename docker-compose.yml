@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: .
+      target: builder
+    command: npm run dev
+    ports:
+      - "${PORT:-5000}:5000"
+    volumes:
+      - db-data:/data
+      - ./app:/workspace/app
+      - ./tests:/workspace/tests
+      - ./scripts:/workspace/scripts
+      - ./package.json:/workspace/package.json
+      - ./tsconfig.json:/workspace/tsconfig.json
+      - ./vitest.config.ts:/workspace/vitest.config.ts
+      - ./drizzle.config.ts:/workspace/drizzle.config.ts
+      - ./biome.json:/workspace/biome.json
+      - ./.env:/workspace/.env:ro
+      - ./.env.test:/workspace/.env.test:ro
+    working_dir: /workspace
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/leads.db
+      NODE_ENV: development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  db-data:

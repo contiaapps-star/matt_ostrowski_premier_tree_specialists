@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    command: ["node", "dist/server.js"]
+    volumes:
+      - db-data:/data
+    environment:
+      NODE_ENV: production
+    restart: always
+
+volumes:
+  db-data:
