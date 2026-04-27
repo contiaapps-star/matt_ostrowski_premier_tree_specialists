@@ -5,6 +5,8 @@ import { createApp } from './app.js';
 import { config } from './config.js';
 import { getDb } from './db/client.js';
 import { bootstrapAdminIfNeeded } from './lib/admin-bootstrap.js';
+import { bootstrapDemoLeadsIfNeeded } from './lib/demo-leads-bootstrap.js';
+import { bootstrapReferenceDataIfNeeded } from './lib/reference-data-bootstrap.js';
 import { logger } from './lib/logger.js';
 
 export interface StartedServer {
@@ -31,7 +33,9 @@ export async function startServer(port: number = config.PORT): Promise<StartedSe
   // (dev + prod), make sure the schema exists before serving.
   if (config.NODE_ENV !== 'test') {
     runMigrationsIfPresent();
+    bootstrapReferenceDataIfNeeded(getDb());
     bootstrapAdminIfNeeded(getDb(), config);
+    bootstrapDemoLeadsIfNeeded(getDb());
   }
   const app = createApp();
 

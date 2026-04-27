@@ -38,3 +38,8 @@ restartPolicyMaxRetries = 3
 #   ADMIN_PASSWORD                — plaintext password (bcrypt-hashed at boot)
 #   ADMIN_DISPLAY_NAME            — optional, defaults to "Admin"
 # After the first successful boot the server ignores these (idempotent).
+#
+# Reference data (zips + FAQs) and 8 synthetic demo leads are bootstrapped
+# automatically at boot whenever their tables are empty. No env var required.
+# A restart will never overwrite real data — once any lead exists, the demo
+# bootstrap is a no-op.
