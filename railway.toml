@@ -32,3 +32,9 @@ restartPolicyMaxRetries = 3
 #   INTEGRATION_MODE              — `live` after smoke tests pass
 #   CONFIDENCE_AUTO_SEND_THRESHOLD — default 0.80, tunable
 #   CONFIDENCE_DRAFT_THRESHOLD    — default 0.50, tunable
+#
+# Initial admin bootstrap (only used on first deploy / empty users table):
+#   ADMIN_EMAIL                   — email for the seeded admin user
+#   ADMIN_PASSWORD                — plaintext password (bcrypt-hashed at boot)
+#   ADMIN_DISPLAY_NAME            — optional, defaults to "Admin"
+# After the first successful boot the server ignores these (idempotent).

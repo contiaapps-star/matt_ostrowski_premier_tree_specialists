@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { createApp } from './app.js';
 import { config } from './config.js';
 import { getDb } from './db/client.js';
+import { bootstrapAdminIfNeeded } from './lib/admin-bootstrap.js';
 import { logger } from './lib/logger.js';
 
 export interface StartedServer {
@@ -30,6 +31,7 @@ export async function startServer(port: number = config.PORT): Promise<StartedSe
   // (dev + prod), make sure the schema exists before serving.
   if (config.NODE_ENV !== 'test') {
     runMigrationsIfPresent();
+    bootstrapAdminIfNeeded(getDb(), config);
   }
   const app = createApp();
 

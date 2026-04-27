@@ -47,6 +47,10 @@ const ConfigSchema = z
     EMAIL_POLL_INTERVAL_SECONDS: z.coerce.number().int().positive().default(60),
 
     WEBSITE_FORM_WEBHOOK_SECRET: z.string().optional().default(''),
+
+    ADMIN_EMAIL: z.string().optional().default(''),
+    ADMIN_PASSWORD: z.string().optional().default(''),
+    ADMIN_DISPLAY_NAME: z.string().default('Admin'),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === 'production') {
@@ -58,6 +62,15 @@ const ConfigSchema = z
             'SESSION_SECRET is required in production and must be at least 16 characters long',
         });
       }
+    }
+    const hasEmail = value.ADMIN_EMAIL.trim().length > 0;
+    const hasPassword = value.ADMIN_PASSWORD.length > 0;
+    if (hasEmail !== hasPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['ADMIN_PASSWORD'],
+        message: 'ADMIN_EMAIL and ADMIN_PASSWORD must be set together (or both unset)',
+      });
     }
   });
 
