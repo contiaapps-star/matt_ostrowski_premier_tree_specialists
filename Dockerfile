@@ -61,8 +61,7 @@ RUN apt-get update \
         curl \
         ca-certificates \
         sqlite3 \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r app && useradd -r -g app -u 1001 app
+    && rm -rf /var/lib/apt/lists/*
 
 # Production node_modules from the deps stage (no dev deps).
 COPY --from=deps /workspace/node_modules ./node_modules
@@ -73,11 +72,11 @@ COPY --from=builder /workspace/app/db/migrations ./app/db/migrations
 COPY package.json package-lock.json* ./
 COPY scripts/backup.sh ./scripts/backup.sh
 
+# Run as root: Railway mounts persistent volumes as root, and a non-root
+# UID can't write to them without an init-script chown dance. Container
+# isolation is provided by Railway's sandbox; the app exposes no shell.
 RUN chmod +x ./scripts/backup.sh \
-    && mkdir -p /data /backups \
-    && chown -R app:app /data /backups /workspace
-
-USER app
+    && mkdir -p /data /backups
 
 EXPOSE 5000
 
