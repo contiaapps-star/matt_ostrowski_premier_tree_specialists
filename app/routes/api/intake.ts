@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import { config } from '../../config.js';
 import { getDb } from '../../db/client.js';
@@ -29,7 +29,7 @@ const WebsiteFormBody = z.object({
   secret: z.string().min(1),
 });
 
-function fail(c: Parameters<Parameters<typeof intakeRoute.post>[1]>[0], status: 400 | 401 | 500, code: string, message?: string) {
+function fail(c: Context, status: 400 | 401 | 500, code: string, message?: string) {
   return c.json({ error: code, ...(message ? { message } : {}) }, status);
 }
 

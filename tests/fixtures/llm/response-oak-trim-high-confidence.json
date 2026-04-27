@@ -1,0 +1,6 @@
+{
+  "response_text": "Hi Diane — thank you for reaching out to Premier Tree Specialists! We can absolutely schedule an estimate appointment for your oak tree. The Oak season is currently closed until November to prevent infection of Oak Wilt, but if you would like an estimate now, it would be valid, if confirmed, for the next season. Would you be available for a phone call to discuss the finer details?\n\nOur ISA-certified arborists have 80+ years of combined experience and will follow up shortly to schedule.\n\n— Premier Tree Specialists Team",
+  "confidence": 0.92,
+  "confidence_reasoning": "Oak season FAQ matched exactly; required customer fields present; tone aligns with brand voice.",
+  "escalation_recheck": false
+}

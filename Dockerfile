@@ -20,12 +20,14 @@ COPY package.json package-lock.json* ./
 
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
-COPY tsconfig.json biome.json vitest.config.ts drizzle.config.ts ./
+COPY tsconfig.json biome.json vitest.config.ts drizzle.config.ts tailwind.config.js ./
 COPY app ./app
 COPY scripts ./scripts
 COPY tests ./tests
+COPY public ./public
 
-RUN npm run build
+RUN npm run build:css \
+    && npm run build
 
 # ---------- Stage 2: runtime (production) ----------
 FROM node:20-slim AS runtime
@@ -45,6 +47,7 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --omit
     && npm cache clean --force
 
 COPY --from=builder /workspace/dist ./dist
+COPY --from=builder /workspace/public ./public
 
 RUN mkdir -p /data && chown -R node:node /data /workspace
 

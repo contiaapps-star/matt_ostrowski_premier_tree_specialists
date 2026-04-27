@@ -18,7 +18,9 @@ export interface RateLimiter {
   reset: () => void;
 }
 
-const DEFAULT_KEY: RateLimiterOptions['keyFn'] = (c) => {
+type KeyFn = NonNullable<RateLimiterOptions['keyFn']>;
+
+const DEFAULT_KEY: KeyFn = (c) => {
   const xff = c.req.header('x-forwarded-for');
   if (xff) return xff.split(',')[0]!.trim();
   const real = c.req.header('x-real-ip');
@@ -61,6 +63,7 @@ export function createRateLimiter(options: RateLimiterOptions): RateLimiter {
     }
     bucket.tokens -= 1;
     await next();
+    return;
   };
 
   return {

@@ -1,0 +1,6 @@
+{
+  "response_text": "Hi there — thanks for reaching out to Premier Tree Specialists about your inquiry. We'll provide a free estimate once one of our ISA-certified arborists has had a chance to look at the work. A team member will follow up shortly to schedule a convenient time.\n\n— Premier Tree Specialists Team",
+  "confidence": 0.65,
+  "confidence_reasoning": "Scope is reasonably clear but limited details — recommending review queue so a human can confirm draft before send.",
+  "escalation_recheck": false
+}

@@ -1,5 +1,11 @@
 {
   "rules": [
+    { "match": ["[task: generate_response]", "diane owens"], "fixture": "response-oak-trim-high-confidence.json" },
+    { "match": ["[task: generate_response]", "barbara wells"], "fixture": "response-removal-medium-confidence.json" },
+    { "match": ["[task: generate_response]", "logan davis"], "fixture": "response-removal-medium-confidence.json" },
+    { "match": ["[task: generate_response]", "lisa garcia"], "fixture": "response-out-of-area-with-text.json" },
+    { "match": ["[task: generate_response]", "low_confidence_marker"], "fixture": "response-low-confidence.json" },
+
     { "match": ["33101"], "fixture": "extract-out-of-area-florida.json" },
     { "match": ["miami"], "fixture": "extract-out-of-area-florida.json" },
     { "match": ["fell on roof"], "fixture": "extract-emergency-storm.json" },

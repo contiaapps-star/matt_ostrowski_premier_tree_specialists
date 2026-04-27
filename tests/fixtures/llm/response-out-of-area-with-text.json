@@ -1,0 +1,6 @@
+{
+  "response_text": "Hi Lisa — thanks for reaching out to Premier Tree Specialists. We're based in Ohio and currently serve only Northeast Ohio (Cleveland area) and Central Ohio (Columbus area), so we're not able to take on this work. Wishing you the best in finding a local ISA-certified arborist for your project.\n\n— Premier Tree Specialists Team",
+  "confidence": 0.85,
+  "confidence_reasoning": "Out-of-area decline is clear; service-area FAQ matched; tone is professional and final.",
+  "escalation_recheck": false
+}

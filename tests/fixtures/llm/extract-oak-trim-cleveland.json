@@ -3,12 +3,12 @@
     "name": "Diane Owens",
     "phone": "(216) 555-0001",
     "email": null,
-    "address": null,
+    "address": "5234 Detroit Ave",
     "city": "Cleveland",
     "state": "OH",
     "zip": "44113"
   },
   "scope_summary": "Estimate for trimming a large oak tree",
   "scope_category": "trimming",
-  "missing_critical_fields": ["email", "address"]
+  "missing_critical_fields": ["email"]
 }

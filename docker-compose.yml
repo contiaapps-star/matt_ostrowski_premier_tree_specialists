@@ -3,7 +3,7 @@ services:
     build:
       context: .
       target: builder
-    command: npm run dev
+    command: sh -c "npm run build:css && npm run dev"
     ports:
       - "${PORT:-5000}:5000"
     volumes:
@@ -11,8 +11,10 @@ services:
       - ./app:/workspace/app
       - ./tests:/workspace/tests
       - ./scripts:/workspace/scripts
+      - ./public:/workspace/public
       - ./package.json:/workspace/package.json
       - ./tsconfig.json:/workspace/tsconfig.json
+      - ./tailwind.config.js:/workspace/tailwind.config.js
       - ./vitest.config.ts:/workspace/vitest.config.ts
       - ./drizzle.config.ts:/workspace/drizzle.config.ts
       - ./biome.json:/workspace/biome.json
