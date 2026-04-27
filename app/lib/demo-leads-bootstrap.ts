@@ -46,7 +46,6 @@ export function bootstrapDemoLeadsIfNeeded(db: DrizzleDb): DemoLeadsBootstrapRes
         id: leadId,
         receivedAt,
         source: spec.source,
-        scopeRaw: spec.lead.scopeRaw,
         ...spec.lead,
       };
       tx.insert(leads).values(leadRow).run();
