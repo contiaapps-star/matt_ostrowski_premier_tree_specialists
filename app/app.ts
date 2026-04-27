@@ -1,5 +1,7 @@
 import { Hono } from 'hono';
 import { healthRoute } from './routes/health.js';
+import { intakeRoute } from './routes/api/intake.js';
+import { adminRoute } from './routes/api/admin.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
 
@@ -10,6 +12,8 @@ export function createApp(): Hono {
   app.onError(errorHandler);
 
   app.route('/health', healthRoute);
+  app.route('/api/intake', intakeRoute);
+  app.route('/api/admin', adminRoute);
 
   app.get('/', (c) =>
     c.json({

@@ -1,0 +1,16 @@
+From: notifications@answerforce.com
+To: agent@premiertreesllc.com
+Subject: After-hours call summary - Premier Tree Specialists
+Date: Sat, 25 Apr 2026 19:42:11 -0400
+
+You received a new call.
+
+Call at: 7:42 PM EDT, April 25, 2026
+From: (216) 555-0030
+Customer name: John Stepanek
+Location: Cleveland, OH 44114
+
+Message Taken:
+Caller is asking general info about tree pruning services and pricing for a couple of mid-size trees in his front yard. Wants a callback during business hours.
+
+Call outcome: Message taken

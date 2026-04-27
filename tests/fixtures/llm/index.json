@@ -1,0 +1,14 @@
+{
+  "rules": [
+    { "match": ["33101"], "fixture": "extract-out-of-area-florida.json" },
+    { "match": ["miami"], "fixture": "extract-out-of-area-florida.json" },
+    { "match": ["fell on roof"], "fixture": "extract-emergency-storm.json" },
+    { "match": ["marilyn hornig"], "fixture": "extract-emergency-storm.json" },
+    { "match": ["storm", "limb"], "fixture": "extract-emergency-storm.json" },
+    { "match": ["bedford heights"], "fixture": "extract-removal-bedford-heights.json" },
+    { "match": ["barbara wells"], "fixture": "extract-removal-bedford-heights.json" },
+    { "match": ["diane owens"], "fixture": "extract-oak-trim-cleveland.json" },
+    { "match": ["big oak"], "fixture": "extract-oak-trim-cleveland.json" },
+    { "match": ["__incomplete_form__"], "fixture": "extract-incomplete-website-form.json" }
+  ]
+}

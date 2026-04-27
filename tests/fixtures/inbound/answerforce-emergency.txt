@@ -1,0 +1,17 @@
+From: notifications@answerforce.com
+To: agent@premiertreesllc.com
+Subject: After-hours call summary - Premier Tree Specialists
+Date: Fri, 24 Apr 2026 22:14:00 -0400
+
+You received a new call.
+
+Call at: 10:14 PM EDT, April 24, 2026
+From: (440) 555-0003
+Customer name: Marilyn Hornig
+Location: Rocky River, OH 44116
+
+Message Taken:
+Need emergency tree removal. A large oak limb fell on my roof during the storm tonight. Please call back as soon as possible — my insurance company is asking for an estimate.
+
+Call outcome: Message taken
+Recording: https://app.answerforce.com/recordings/aabbcc

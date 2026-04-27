@@ -1,0 +1,18 @@
+From: noreply@google-business.com
+To: agent@premiertreesllc.com
+Subject: New lead from Google Local Services Ads
+Date: Sat, 25 Apr 2026 14:32:18 -0400
+
+You have a new message from Diane Owens
+
+Customer: Diane Owens
+Phone: (216) 555-0001
+Location: Cleveland, OH 44113
+Business: Tree Service
+Job type: Tree trimming and pruning
+
+Message:
+I have a big oak tree that I would like to have looked at. It will probably need trimming and I need a quote.
+
+Reply to this customer through your Local Services Ads inbox:
+https://ads.google.com/lsa/conversation/abc123

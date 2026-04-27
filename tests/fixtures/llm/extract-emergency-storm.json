@@ -1,0 +1,14 @@
+{
+  "extracted": {
+    "name": "Marilyn Hornig",
+    "phone": "(440) 555-0003",
+    "email": null,
+    "address": "55 Ridge Rd",
+    "city": "Rocky River",
+    "state": "OH",
+    "zip": "44116"
+  },
+  "scope_summary": "Emergency: large oak limb fell on roof during storm",
+  "scope_category": "emergency",
+  "missing_critical_fields": []
+}

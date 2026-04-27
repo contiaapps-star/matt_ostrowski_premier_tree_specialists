@@ -1,0 +1,14 @@
+{
+  "extracted": {
+    "name": null,
+    "phone": null,
+    "email": null,
+    "address": null,
+    "city": null,
+    "state": null,
+    "zip": null
+  },
+  "scope_summary": "Generic quote request with no contact details",
+  "scope_category": "other",
+  "missing_critical_fields": ["name", "phone", "email", "address"]
+}

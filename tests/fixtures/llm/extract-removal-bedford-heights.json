@@ -1,0 +1,14 @@
+{
+  "extracted": {
+    "name": "Barbara Wells",
+    "phone": "(440) 555-0002",
+    "email": "bwells@example.com",
+    "address": "1234 Maple St",
+    "city": "Bedford Heights",
+    "state": "OH",
+    "zip": "44146"
+  },
+  "scope_summary": "Tree removal in front yard",
+  "scope_category": "removal",
+  "missing_critical_fields": []
+}
