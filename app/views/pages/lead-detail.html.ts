@@ -241,6 +241,22 @@ export function extractedDataRegion(lead: Lead) {
   return html`<div id="extracted-data-region">${extractedDataCard(lead)}</div>`;
 }
 
+export function auditTrailRegion(auditEvents: AuditLogRow[]) {
+  return html`<details
+      id="audit-trail-region"
+      class="mt-4 pts-card"
+      data-testid="audit-trail"
+      open
+    >
+      <summary class="cursor-pointer text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-500" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Audit trail
+        <span class="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold h-5 min-w-5 px-1.5">${auditEvents.length}</span>
+      </summary>
+      <div class="mt-3">${auditTimeline(auditEvents)}</div>
+    </details>`;
+}
+
 function outboundStatusBadge(status: string) {
   const cls =
     status === 'sent'
@@ -346,14 +362,7 @@ export function leadDetailPage({
 
     ${outboundStatusCard(lead, outboundMessages ?? [])}
 
-    <details class="mt-4 pts-card" data-testid="audit-trail" open>
-      <summary class="cursor-pointer text-sm font-semibold text-slate-700 flex items-center gap-2">
-        <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-500" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        Audit trail
-        <span class="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-[10px] font-semibold h-5 min-w-5 px-1.5">${auditEvents.length}</span>
-      </summary>
-      <div class="mt-3">${auditTimeline(auditEvents)}</div>
-    </details>
+    ${auditTrailRegion(auditEvents)}
 
     <details class="mt-4 pts-card" data-testid="original-payload">
       <summary class="cursor-pointer text-sm font-semibold text-slate-700 flex items-center gap-2">

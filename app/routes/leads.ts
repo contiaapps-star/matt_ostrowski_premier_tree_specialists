@@ -16,8 +16,9 @@ import { generateUuidV7 } from '../lib/uuid.js';
 import { normalizeToE164 } from '../lib/e164.js';
 import { lookupCounty } from '../lib/zip-lookup.js';
 import { logger } from '../lib/logger.js';
-import { baseLayout, flashOob } from '../views/layouts/base.html.js';
+import { baseLayout, flashOob, reviewBadgeOob } from '../views/layouts/base.html.js';
 import {
+  auditTrailRegion,
   extractedDataRegion,
   leadDetailPage,
   leadSummaryCard,
@@ -25,13 +26,14 @@ import {
   outboundStatusCard,
   responseRegion,
 } from '../views/pages/lead-detail.html.js';
-import { demoUserMiddleware, type DemoUser, type DemoUserVariables } from '../middleware/demo-user.js';
+import { authMiddleware, csrfMiddleware, type AuthenticatedUser, type AuthVariables } from '../middleware/auth.js';
 import { generateResponse } from '../services/response-generator.service.js';
 import { dispatchLead } from '../services/outbound-dispatcher.service.js';
 
-export const leadsRoute = new Hono<{ Variables: DemoUserVariables }>();
+export const leadsRoute = new Hono<{ Variables: AuthVariables }>();
 
-leadsRoute.use('*', demoUserMiddleware);
+leadsRoute.use('*', authMiddleware);
+leadsRoute.use('*', csrfMiddleware);
 
 function loadLead(id: string): Lead | null {
   const db = getDb();
@@ -124,10 +126,18 @@ function withFlash(region: ReturnType<typeof responseRegion>, text: string, kind
   return honoHtml`${region}${flashOob(text, kind)}`;
 }
 
+function auditTrailOob(leadId: string) {
+  return honoHtml`<div hx-swap-oob="outerHTML:#audit-trail-region">${auditTrailRegion(loadAuditEvents(leadId))}</div>`;
+}
+
+function outboundStatusOob(lead: Lead, leadId: string) {
+  return honoHtml`<div hx-swap-oob="outerHTML:#outbound-status-region">${outboundStatusCard(lead, loadOutboundMessages(leadId))}</div>`;
+}
+
 /**
- * Returns a fragment containing the response region (primary swap target)
- * + an OOB swap of the lead-summary card so its status badge stays in sync
- * + a flash banner.
+ * Returns a fragment containing the response region (primary swap target) +
+ * out-of-band swaps of every region that may have changed (lead summary card,
+ * audit trail, header review badge, outbound status card) + a flash banner.
  */
 function responseAndSummary(
   lead: Lead,
@@ -135,7 +145,7 @@ function responseAndSummary(
   kind: 'success' | 'info' | 'error' = 'success',
 ) {
   const summaryOob = honoHtml`<div id="lead-summary-region" hx-swap-oob="true">${leadSummaryCard(lead)}</div>`;
-  return honoHtml`${responseRegion(lead)}${summaryOob}${flashOob(flashText, kind)}`;
+  return honoHtml`${responseRegion(lead)}${summaryOob}${auditTrailOob(lead.id)}${outboundStatusOob(lead, lead.id)}${reviewBadgeOob(getReviewQueueCount())}${flashOob(flashText, kind)}`;
 }
 
 leadsRoute.get('/leads/:id', (c) => {
@@ -169,6 +179,7 @@ leadsRoute.get('/leads/:id', (c) => {
       active: 'dashboard',
       reviewQueueCount: getReviewQueueCount(),
       userDisplayName: c.get('user')?.displayName ?? null,
+      csrfToken: c.get('csrfToken'),
     }),
   );
 });
@@ -179,7 +190,7 @@ leadsRoute.patch('/leads/:id/extracted-data', async (c) => {
   if (!lead) {
     return c.json({ error: 'lead_not_found' }, 404);
   }
-  const user: DemoUser = c.get('user');
+  const user: AuthenticatedUser = c.get('user');
 
   const formBody = await c.req.parseBody();
   const parsed = parseExtractedFormBody(formBody as Record<string, unknown>);
@@ -216,7 +227,10 @@ leadsRoute.patch('/leads/:id/extracted-data', async (c) => {
   if (!updated) {
     return c.json({ error: 'lead_disappeared' }, 500);
   }
-  return c.html(extractedDataRegion(updated));
+  const summaryOob = honoHtml`<div id="lead-summary-region" hx-swap-oob="true">${leadSummaryCard(updated)}</div>`;
+  return c.html(
+    honoHtml`${extractedDataRegion(updated)}${summaryOob}${auditTrailOob(id)}${flashOob('Extracted data saved.', 'success')}`,
+  );
 });
 
 leadsRoute.post('/leads/:id/approve', (c) => {
@@ -226,7 +240,7 @@ leadsRoute.post('/leads/:id/approve', (c) => {
   if (lead.status !== 'awaiting_review') {
     return c.json({ error: 'invalid_status', status: lead.status }, 409);
   }
-  const user: DemoUser = c.get('user');
+  const user: AuthenticatedUser = c.get('user');
   const db = getDb();
   const now = new Date();
   db.update(leads)
@@ -256,7 +270,7 @@ leadsRoute.post('/leads/:id/reject', async (c) => {
   if (lead.status !== 'awaiting_review') {
     return c.json({ error: 'invalid_status', status: lead.status }, 409);
   }
-  const user: DemoUser = c.get('user');
+  const user: AuthenticatedUser = c.get('user');
   const formBody = (await c.req.parseBody()) as Record<string, unknown>;
   const note = trimNullable(formBody.note);
   const db = getDb();
@@ -281,7 +295,7 @@ leadsRoute.post('/leads/:id/edit-and-send', async (c) => {
   if (!SENDABLE_STATUSES.has(lead.status)) {
     return c.json({ error: 'invalid_status', status: lead.status }, 409);
   }
-  const user: DemoUser = c.get('user');
+  const user: AuthenticatedUser = c.get('user');
   const formBody = (await c.req.parseBody()) as Record<string, unknown>;
   const newText = typeof formBody.response_text === 'string' ? formBody.response_text.trim() : '';
   if (newText.length < 1 || newText.length > 5000) {
@@ -313,7 +327,7 @@ leadsRoute.post('/leads/:id/regenerate-response', async (c) => {
   const id = c.req.param('id');
   const lead = loadLead(id);
   if (!lead) return c.json({ error: 'lead_not_found' }, 404);
-  const user: DemoUser = c.get('user');
+  const user: AuthenticatedUser = c.get('user');
 
   const db = getDb();
   // Reset:
@@ -372,8 +386,9 @@ leadsRoute.post('/leads/:id/dispatch-now', async (c) => {
 
   const messages = loadOutboundMessages(id);
   const updated = loadLead(id) as Lead;
+  const summaryOob = honoHtml`<div id="lead-summary-region" hx-swap-oob="true">${leadSummaryCard(updated)}</div>`;
   return c.html(
-    honoHtml`${outboundStatusCard(updated, messages)}${flashOob(
+    honoHtml`${outboundStatusCard(updated, messages)}${summaryOob}${auditTrailOob(id)}${reviewBadgeOob(getReviewQueueCount())}${flashOob(
       describeDispatchResult(dispatchResult),
       dispatchResult.emailSent || dispatchResult.smsSent ? 'success' : 'error',
     )}`,

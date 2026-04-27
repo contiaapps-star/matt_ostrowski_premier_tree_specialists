@@ -8,6 +8,13 @@
       "when": 1777259327003,
       "tag": "0000_wild_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1777862400000,
+      "tag": "0001_add_sessions",
+      "breakpoints": true
     }
   ]
 }

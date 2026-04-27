@@ -1,14 +1,16 @@
 import { asc, count, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { getDb } from '../db/client.js';
-import { leads } from '../db/schema.js';
+import { leads, type Lead } from '../db/schema.js';
 import { baseLayout } from '../views/layouts/base.html.js';
-import { queuePage } from '../views/pages/queue.html.js';
-import { demoUserMiddleware, type DemoUserVariables } from '../middleware/demo-user.js';
+import { queueBodyPartial, queuePage, type QueuePageData } from '../views/pages/queue.html.js';
+import { authMiddleware, type AuthVariables } from '../middleware/auth.js';
 
-export const queueRoute = new Hono<{ Variables: DemoUserVariables }>();
+export const queueRoute = new Hono<{ Variables: AuthVariables }>();
 
-queueRoute.use('*', demoUserMiddleware);
+queueRoute.use('*', authMiddleware);
+
+const POLL_URL = '/queue/body';
 
 function getReviewQueueCount(): number {
   const db = getDb();
@@ -20,24 +22,14 @@ function getReviewQueueCount(): number {
   return Number(rows[0]?.value ?? 0);
 }
 
-function getFlaggedCount(): number {
-  const db = getDb();
-  const rows = db
-    .select({ value: count() })
-    .from(leads)
-    .where(eq(leads.status, 'manually_flagged'))
-    .all();
-  return Number(rows[0]?.value ?? 0);
-}
-
-queueRoute.get('/queue', (c) => {
+function loadQueueData(): QueuePageData {
   const db = getDb();
   const items = db
     .select()
     .from(leads)
     .where(inArray(leads.status, ['awaiting_review', 'manually_flagged']))
     .orderBy(asc(leads.receivedAt))
-    .all();
+    .all() as Lead[];
 
   const reviewCount = items.filter((l) => l.status === 'awaiting_review').length;
   const flaggedCount = items.filter((l) => l.status === 'manually_flagged').length;
@@ -49,26 +41,31 @@ queueRoute.get('/queue', (c) => {
   const averageWaitMinutes =
     waits.length === 0 ? null : waits.reduce((a, b) => a + b, 0) / waits.length;
 
-  const body = queuePage({
+  return {
     leads: items,
     reviewCount,
     flaggedCount,
     averageWaitMinutes,
-  });
+    pollUrl: POLL_URL,
+  };
+}
 
-  const headerReviewCount = getReviewQueueCount();
-  // Fallback if `reviewCount` differs (it shouldn't): use header for badge.
-  void headerReviewCount;
-
+queueRoute.get('/queue', (c) => {
+  const data = loadQueueData();
   return c.html(
     baseLayout({
       title: 'Review Queue',
-      body,
+      body: queuePage(data),
       active: 'queue',
-      reviewQueueCount: reviewCount,
+      reviewQueueCount: data.reviewCount,
       userDisplayName: c.get('user')?.displayName ?? null,
+      csrfToken: c.get('csrfToken'),
     }),
   );
 });
 
-void getFlaggedCount;
+queueRoute.get('/queue/body', (c) => {
+  return c.html(queueBodyPartial(loadQueueData()));
+});
+
+void getReviewQueueCount;

@@ -76,17 +76,18 @@ describe('GET /queue', () => {
   });
 });
 
-describe('GET /stats (placeholder)', () => {
+describe('GET /stats', () => {
   beforeEach(() => setupFreshDb());
   afterEach(() => teardownDb());
 
-  it('renders the stats placeholder page', async () => {
+  it('renders the stats dashboard with KPI grid', async () => {
     const app = createApp();
     const res = await app.request('/stats');
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-testid="stats-page"');
-    expect(html).toContain('Stats coming in Phase 7');
+    expect(html).toContain('data-testid="stats-grid"');
+    expect(html).toContain('Stats — last 7 days');
   });
 });
 

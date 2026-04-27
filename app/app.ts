@@ -4,12 +4,14 @@ import { Hono } from 'hono';
 import { healthRoute } from './routes/health.js';
 import { intakeRoute } from './routes/api/intake.js';
 import { adminRoute } from './routes/api/admin.js';
+import { authRoute } from './routes/auth.js';
 import { dashboardRoute } from './routes/dashboard.js';
 import { leadsRoute } from './routes/leads.js';
 import { queueRoute } from './routes/queue.js';
 import { statsRoute } from './routes/stats.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
+import { notFoundPage } from './views/pages/errors.html.js';
 
 const STATIC_ROOT = resolve(process.cwd(), 'public');
 
@@ -40,37 +42,52 @@ function serveFromPublic(relPath: string): { body: Buffer; type: string } | null
   }
 }
 
+function staticHandler(rel: string) {
+  const file = serveFromPublic(rel);
+  if (!file) return null;
+  return new Response(new Uint8Array(file.body), {
+    status: 200,
+    headers: { 'content-type': file.type },
+  });
+}
+
 export function createApp(): Hono {
   const app = new Hono();
 
   app.use('*', requestLogger);
   app.onError(errorHandler);
 
+  // Public routes (no auth required).
   app.route('/health', healthRoute);
   app.route('/api/intake', intakeRoute);
   app.route('/api/admin', adminRoute);
+  app.route('/', authRoute);
 
   // Static files served from /public.
   app.get('/styles.css', (c) => {
-    const file = serveFromPublic('styles.css');
-    if (!file) return c.text('', 404);
-    return new Response(new Uint8Array(file.body), {
-      status: 200,
-      headers: { 'content-type': file.type },
-    });
+    const res = staticHandler('styles.css');
+    if (!res) return c.text('', 404);
+    return res;
+  });
+  app.get('/favicon.svg', (c) => {
+    const res = staticHandler('favicon.svg');
+    if (!res) return c.text('', 404);
+    return res;
+  });
+  app.get('/favicon.ico', (c) => {
+    const res = staticHandler('favicon.svg');
+    if (!res) return c.text('', 404);
+    return res;
   });
   app.get('/public/*', (c) => {
     const url = new URL(c.req.url);
     const rel = url.pathname.replace(/^\/public\//, '');
-    const file = serveFromPublic(rel);
-    if (!file) return c.text('', 404);
-    return new Response(new Uint8Array(file.body), {
-      status: 200,
-      headers: { 'content-type': file.type },
-    });
+    const res = staticHandler(rel);
+    if (!res) return c.text('', 404);
+    return res;
   });
 
-  // Dashboard / leads / queue / stats UI routes.
+  // Authenticated UI routes.
   app.route('/', dashboardRoute);
   app.route('/', leadsRoute);
   app.route('/', queueRoute);
@@ -78,7 +95,7 @@ export function createApp(): Hono {
 
   app.notFound((c) => {
     if (c.req.header('accept')?.includes('text/html')) {
-      return c.html('<!doctype html><html><body><h1>404 Not Found</h1></body></html>', 404);
+      return c.html(notFoundPage(`No route for ${c.req.method} ${c.req.path}.`), 404);
     }
     return c.json({ error: 'not_found', path: c.req.path }, 404);
   });

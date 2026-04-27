@@ -15,11 +15,11 @@ import {
   leadsTablePartial,
   type DashboardFilters,
 } from '../views/pages/dashboard.html.js';
-import { demoUserMiddleware, type DemoUserVariables } from '../middleware/demo-user.js';
+import { authMiddleware, type AuthVariables } from '../middleware/auth.js';
 
-export const dashboardRoute = new Hono<{ Variables: DemoUserVariables }>();
+export const dashboardRoute = new Hono<{ Variables: AuthVariables }>();
 
-dashboardRoute.use('*', demoUserMiddleware);
+dashboardRoute.use('*', authMiddleware);
 
 const PAGE_SIZE = 20;
 const DEFAULT_LOOKBACK_DAYS = 7;
@@ -127,12 +127,16 @@ dashboardRoute.get('/dashboard', (c) => {
   const reviewCount = getReviewQueueCount();
   const user = c.get('user');
 
+  const partialQs = url.searchParams.toString();
+  const pollUrl = `/dashboard/leads-table${partialQs ? `?${partialQs}` : ''}`;
+
   const body = dashboardPage({
     leads: items,
     filters: { source: parsed.source, status: parsed.status, from: parsed.from, to: parsed.to },
     total,
     page,
     pageSize: PAGE_SIZE,
+    pollUrl,
   });
 
   return c.html(
@@ -142,6 +146,7 @@ dashboardRoute.get('/dashboard', (c) => {
       active: 'dashboard',
       reviewQueueCount: reviewCount,
       userDisplayName: user?.displayName ?? null,
+      csrfToken: c.get('csrfToken'),
     }),
   );
 });
@@ -154,5 +159,7 @@ dashboardRoute.get('/dashboard/leads-table', (c) => {
 
   const where = buildWhere(parsed);
   const items = selectLeads(where, page);
-  return c.html(leadsTablePartial(items));
+  const partialQs = url.searchParams.toString();
+  const pollUrl = `/dashboard/leads-table${partialQs ? `?${partialQs}` : ''}`;
+  return c.html(leadsTablePartial(items, pollUrl));
 });

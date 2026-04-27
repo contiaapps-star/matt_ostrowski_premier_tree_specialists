@@ -1,6 +1,9 @@
+import { resolve } from 'node:path';
 import { serve, type ServerType } from '@hono/node-server';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { createApp } from './app.js';
 import { config } from './config.js';
+import { getDb } from './db/client.js';
 import { logger } from './lib/logger.js';
 
 export interface StartedServer {
@@ -9,7 +12,25 @@ export interface StartedServer {
   close: () => Promise<void>;
 }
 
+function runMigrationsIfPresent(): void {
+  const folder = resolve(process.cwd(), 'app', 'db', 'migrations');
+  try {
+    const db = getDb();
+    migrate(db, { migrationsFolder: folder });
+    logger.info({ folder }, 'migrations applied');
+  } catch (err) {
+    logger.error({ err, folder }, 'failed to apply migrations on startup');
+    throw err;
+  }
+}
+
 export async function startServer(port: number = config.PORT): Promise<StartedServer> {
+  // Tests apply migrations themselves via setupFreshDb against a per-test
+  // in-memory DB; running them again here would just thrash. Everywhere else
+  // (dev + prod), make sure the schema exists before serving.
+  if (config.NODE_ENV !== 'test') {
+    runMigrationsIfPresent();
+  }
   const app = createApp();
 
   return await new Promise<StartedServer>((resolve) => {

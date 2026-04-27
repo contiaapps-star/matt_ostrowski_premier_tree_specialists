@@ -4,11 +4,14 @@ import { getDb } from '../db/client.js';
 import { leads } from '../db/schema.js';
 import { baseLayout } from '../views/layouts/base.html.js';
 import { statsPage } from '../views/pages/stats.html.js';
-import { demoUserMiddleware, type DemoUserVariables } from '../middleware/demo-user.js';
+import { authMiddleware, type AuthVariables } from '../middleware/auth.js';
+import { computeStats } from '../services/stats.service.js';
 
-export const statsRoute = new Hono<{ Variables: DemoUserVariables }>();
+export const statsRoute = new Hono<{ Variables: AuthVariables }>();
 
-statsRoute.use('*', demoUserMiddleware);
+statsRoute.use('*', authMiddleware);
+
+const POLL_URL = '/stats/body';
 
 function getReviewQueueCount(): number {
   const db = getDb();
@@ -20,14 +23,20 @@ function getReviewQueueCount(): number {
   return Number(rows[0]?.value ?? 0);
 }
 
-statsRoute.get('/stats', (c) =>
-  c.html(
+statsRoute.get('/stats', (c) => {
+  const stats = computeStats();
+  return c.html(
     baseLayout({
       title: 'Stats',
-      body: statsPage(),
+      body: statsPage(stats, POLL_URL),
       active: 'stats',
       reviewQueueCount: getReviewQueueCount(),
       userDisplayName: c.get('user')?.displayName ?? null,
+      csrfToken: c.get('csrfToken'),
     }),
-  ),
-);
+  );
+});
+
+statsRoute.get('/stats/body', (c) => {
+  return c.html(statsPage(computeStats(), POLL_URL));
+});

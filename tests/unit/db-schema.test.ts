@@ -14,6 +14,7 @@ const EXPECTED_TABLES = [
   'faq_entries',
   'audit_log',
   'users',
+  'sessions',
   'zip_code_to_county',
 ];
 
@@ -30,6 +31,8 @@ const EXPECTED_INDEXES = [
   'audit_log_lead_id_idx',
   'audit_log_created_at_idx',
   'users_email_unique',
+  'sessions_user_id_idx',
+  'sessions_expires_at_idx',
   'zip_code_to_county_county_idx',
   'zip_code_to_county_region_idx',
 ];
@@ -48,7 +51,7 @@ afterEach(() => {
 });
 
 describe('database schema', () => {
-  it('creates all 7 expected tables', () => {
+  it('creates all expected tables', () => {
     const rows = sqlite
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__drizzle%'`)
       .all() as Array<{ name: string }>;

@@ -184,6 +184,24 @@ export const users = sqliteTable(
   }),
 );
 
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => ({
+    sessionsUserIdIdx: index('sessions_user_id_idx').on(t.userId),
+    sessionsExpiresAtIdx: index('sessions_expires_at_idx').on(t.expiresAt),
+  }),
+);
+
 export const zipCodeToCounty = sqliteTable(
   'zip_code_to_county',
   {
@@ -209,5 +227,7 @@ export type AuditLogRow = typeof auditLog.$inferSelect;
 export type NewAuditLogRow = typeof auditLog.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;
 export type ZipRow = typeof zipCodeToCounty.$inferSelect;
 export type NewZipRow = typeof zipCodeToCounty.$inferInsert;

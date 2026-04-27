@@ -16,6 +16,7 @@ export interface DashboardPageData {
   total: number;
   page: number;
   pageSize: number;
+  pollUrl: string;
 }
 
 const SOURCE_OPTIONS: Array<{ value: string | null; label: string }> = [
@@ -61,9 +62,15 @@ function chip(label: string, isActive: boolean, qs: string, target: 'source' | '
     >${label}</a>`;
 }
 
-export function leadsTablePartial(leads: Lead[]) {
+export function leadsTablePartial(leads: Lead[], pollUrl?: string) {
+  const pollAttrs = pollUrl
+    ? raw(
+        ` hx-get="${escapeHtml(pollUrl)}" hx-trigger="every 15s[document.visibilityState==='visible']" hx-swap="outerHTML" hx-disinherit="*"`,
+      )
+    : raw('');
+
   if (leads.length === 0) {
-    return html`<div id="leads-table-container" data-testid="leads-table-container">
+    return html`<div id="leads-table-container" data-testid="leads-table-container"${pollAttrs}>
       ${emptyState({
         title: 'No leads in this view yet.',
         description: 'When new leads come in across LSA, the website form, or AnswerForce, they will appear here.',
@@ -72,7 +79,7 @@ export function leadsTablePartial(leads: Lead[]) {
     </div>`;
   }
 
-  return html`<div id="leads-table-container" data-testid="leads-table-container">
+  return html`<div id="leads-table-container" data-testid="leads-table-container"${pollAttrs}>
     <div class="hidden md:block overflow-x-auto">
       <table class="min-w-full divide-y divide-slate-200" data-testid="leads-table">
         <thead class="bg-slate-50">
@@ -112,7 +119,7 @@ export function leadsTablePartial(leads: Lead[]) {
 }
 
 export function dashboardPage(data: DashboardPageData) {
-  const { filters, leads, total, page, pageSize } = data;
+  const { filters, leads, total, page, pageSize, pollUrl } = data;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const headerSummary = total === 0 ? '0 leads' : `${total} lead${total === 1 ? '' : 's'}`;
 
@@ -173,7 +180,7 @@ export function dashboardPage(data: DashboardPageData) {
       </form>
     </div>
 
-    ${leadsTablePartial(leads)}
+    ${leadsTablePartial(leads, pollUrl)}
 
     <nav class="flex items-center justify-between mt-4 text-sm text-slate-600" data-testid="pagination">
       <div>${total === 0 ? 'No leads' : `Showing ${leads.length} of ${total}`}</div>

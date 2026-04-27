@@ -46,3 +46,25 @@
 .htmx-request.htmx-indicator {
   display: inline-flex;
 }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-brand-accent);
+  outline-offset: 2px;
+}
+
+.toast {
+  @apply rounded-md border px-3 py-2 text-sm shadow;
+}
+.toast-success {
+  @apply toast bg-green-50 border-green-200 text-green-900;
+}
+.toast-error {
+  @apply toast bg-red-50 border-red-200 text-red-900;
+}
+.toast-info {
+  @apply toast bg-slate-50 border-slate-200 text-slate-800;
+}

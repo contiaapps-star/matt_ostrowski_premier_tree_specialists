@@ -1,4 +1,4 @@
-import { html } from 'hono/html';
+import { html, raw } from 'hono/html';
 import type { Lead } from '../../db/schema.js';
 import { emptyState } from '../partials/empty-state.html.js';
 import { leadRow } from '../partials/lead-row.html.js';
@@ -8,27 +8,30 @@ export interface QueuePageData {
   reviewCount: number;
   flaggedCount: number;
   averageWaitMinutes: number | null;
+  /** When provided, the queue body polls this URL every 15 s to stay live. */
+  pollUrl?: string;
 }
 
-export function queuePage(data: QueuePageData) {
-  const { leads, reviewCount, flaggedCount, averageWaitMinutes } = data;
+export function queueBodyPartial(data: QueuePageData) {
+  const { leads, reviewCount, flaggedCount, averageWaitMinutes, pollUrl } = data;
   const total = leads.length;
   const avgText =
     averageWaitMinutes === null
       ? 'no wait data yet'
       : `average wait: ${Math.round(averageWaitMinutes)} min`;
 
-  return html`<section data-testid="queue-page">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-      <div>
-        <h1 class="text-xl font-semibold text-slate-900">Review Queue</h1>
-        <p class="text-sm text-slate-500" data-testid="queue-subtitle">
-          ${reviewCount} awaiting review · ${flaggedCount} manually flagged · ${avgText}
-        </p>
-      </div>
-    </div>
+  const pollAttrs = pollUrl
+    ? raw(
+        ` hx-get="${pollUrl}" hx-trigger="every 15s[document.visibilityState==='visible']" hx-swap="outerHTML" hx-disinherit="*"`,
+      )
+    : raw('');
 
-    <div class="rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 mb-4" data-testid="queue-banner">
+  return html`<div id="queue-body-region" data-testid="queue-body-region"${pollAttrs}>
+    <p class="text-sm text-slate-500" data-testid="queue-subtitle">
+      ${reviewCount} awaiting review · ${flaggedCount} manually flagged · ${avgText}
+    </p>
+
+    <div class="rounded-md bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900 mt-3 mb-4" data-testid="queue-banner">
       <strong>${total} lead${total === 1 ? '' : 's'} need attention.</strong>
       Oldest first; tackle these to keep response time under 1 minute.
     </div>
@@ -58,5 +61,16 @@ export function queuePage(data: QueuePageData) {
             </tbody>
           </table>
         </div>`}
+  </div>`;
+}
+
+export function queuePage(data: QueuePageData) {
+  return html`<section data-testid="queue-page">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
+      <div>
+        <h1 class="text-xl font-semibold text-slate-900">Review Queue</h1>
+      </div>
+    </div>
+    ${queueBodyPartial(data)}
   </section>`;
 }
