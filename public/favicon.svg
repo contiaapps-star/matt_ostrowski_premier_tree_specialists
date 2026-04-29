@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="14" fill="#15803d"/>
-  <text x="32" y="42" text-anchor="middle" font-family="system-ui, sans-serif" font-size="36" font-weight="700" fill="#ffffff">P</text>
+  <rect width="64" height="64" rx="14" fill="#ffffff"/>
+  <path d="M32 8 L42 22 L36 22 L44 34 L36 34 L46 48 L34 48 L34 56 L30 56 L30 48 L18 48 L28 34 L20 34 L28 22 L22 22 Z" fill="#1f6b3a"/>
+  <text x="32" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="#d72f2a">PTS</text>
 </svg>

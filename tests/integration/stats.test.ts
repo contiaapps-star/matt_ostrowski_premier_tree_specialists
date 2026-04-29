@@ -107,23 +107,21 @@ describe('stats — service & route', () => {
     expect(lsa.daily.length).toBe(7);
   });
 
-  it('GET /stats renders KPI cards and matches computed values', async () => {
+  it('workspace KPI strip renders auto-send rate from computed stats', async () => {
     const db = getDb();
     const now = Date.now();
     insertLead(db, { status: 'auto_sent', receivedAt: new Date(now - 60_000), confidenceScore: 0.9 });
     insertLead(db, { status: 'awaiting_review', receivedAt: new Date(now - 120_000), confidenceScore: 0.6 });
     clearStatsCache();
     const app = createApp();
-    const res = await app.request('/stats');
+    const res = await app.request('/');
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-testid="stats-page"');
-    expect(html).toContain('data-testid="stats-kpi-auto-send-rate"');
-    expect(html).toContain('data-testid="stats-kpi-response-time"');
-    expect(html).toContain('data-testid="stats-kpi-arbostar-sync-rate"');
-    expect(html).toContain('data-testid="stats-kpi-out-of-service-area"');
-    expect(html).toContain('data-testid="stats-kpi-manual-flag-count"');
-    expect(html).toContain('50.0%'); // 1 auto-sent of 2 processed
+    expect(html).toContain('data-testid="kpi-strip"');
+    expect(html).toContain('data-testid="kpi-automation-rate"');
+    expect(html).toContain('data-testid="kpi-auto-sent"');
+    expect(html).toContain('data-testid="kpi-needs-review"');
+    expect(html).toContain('50%'); // 1 auto-sent of 2 processed
   });
 
   it('caches stats for 60 seconds', () => {

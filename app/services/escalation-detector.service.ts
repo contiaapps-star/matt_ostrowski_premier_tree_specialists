@@ -10,6 +10,11 @@ export interface EscalationResult {
   matchedKeywords: string[];
 }
 
+export interface EscalationOptions {
+  /** Override or extend the default escalation keyword list (single words and multi-word phrases). */
+  customKeywords?: string[];
+}
+
 interface EscalationKeyword {
   display: string;
   pattern: RegExp;
@@ -58,13 +63,40 @@ function detectUrgentTimeframe(text: string): boolean {
   return false;
 }
 
-export function detectEscalation(scopeRaw: string | null | undefined): EscalationResult {
+function buildKeywordsFromList(list: string[]): EscalationKeyword[] {
+  const out: EscalationKeyword[] = [];
+  const seen = new Set<string>();
+  for (const raw of list) {
+    const trimmed = raw.trim();
+    if (trimmed.length === 0) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const tokens = trimmed.split(/\s+/);
+    if (tokens.length === 1) {
+      out.push({ display: trimmed, pattern: new RegExp(`\\b${tokens[0]!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i') });
+    } else {
+      out.push({ display: trimmed, pattern: flexPhrase(tokens, 4) });
+    }
+  }
+  return out;
+}
+
+export function detectEscalation(
+  scopeRaw: string | null | undefined,
+  opts: EscalationOptions = {},
+): EscalationResult {
   if (typeof scopeRaw !== 'string' || scopeRaw.length === 0) {
     return { triggered: false, matchedKeywords: [] };
   }
 
+  const keywordSet: EscalationKeyword[] =
+    opts.customKeywords && opts.customKeywords.length > 0
+      ? buildKeywordsFromList(opts.customKeywords)
+      : KEYWORDS;
+
   const matched: string[] = [];
-  for (const kw of KEYWORDS) {
+  for (const kw of keywordSet) {
     if (kw.pattern.test(scopeRaw)) matched.push(kw.display);
   }
   if (detectUrgentTimeframe(scopeRaw)) {

@@ -215,6 +215,14 @@ export const zipCodeToCounty = sqliteTable(
   }),
 );
 
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
 export type LeadSourceEvent = typeof leadSourceEvents.$inferSelect;
@@ -231,3 +239,5 @@ export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type ZipRow = typeof zipCodeToCounty.$inferSelect;
 export type NewZipRow = typeof zipCodeToCounty.$inferInsert;
+export type AppSettingsRow = typeof appSettings.$inferSelect;
+export type NewAppSettingsRow = typeof appSettings.$inferInsert;

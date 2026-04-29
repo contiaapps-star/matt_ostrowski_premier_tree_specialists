@@ -29,8 +29,8 @@ describe('end-to-end with real auth + CSRF', () => {
     const session = createTestSession();
     const cookieHeader = `pts_session=${session.cookieValue}; ${CSRF_COOKIE_NAME}=${session.csrfToken}`;
 
-    // 1. Hit dashboard with real session.
-    const dashRes = await app.request('/dashboard', {
+    // 1. Hit workspace with real session.
+    const dashRes = await app.request('/', {
       headers: {
         cookie: cookieHeader,
         'x-skip-test-bypass': '1',
@@ -85,8 +85,8 @@ describe('end-to-end with real auth + CSRF', () => {
     const outbound = db.select().from(outboundMessages).where(eq(outboundMessages.leadId, id)).all();
     expect(outbound.length).toBeGreaterThanOrEqual(1);
 
-    // 6. Stats reflect new manually_sent lead.
-    const statsRes = await app.request('/stats', {
+    // 6. Workspace KPI strip reflects new manually_sent lead.
+    const statsRes = await app.request('/', {
       headers: {
         cookie: cookieHeader,
         'x-skip-test-bypass': '1',
@@ -95,7 +95,7 @@ describe('end-to-end with real auth + CSRF', () => {
     });
     expect(statsRes.status).toBe(200);
     const statsHtml = await statsRes.text();
-    expect(statsHtml).toContain('data-testid="stats-page"');
+    expect(statsHtml).toContain('data-testid="kpi-strip"');
   });
 
   it('hits 100 ingests in parallel without race conditions or duplicates (with rate limiter bypassed via per-IP keys)', async () => {

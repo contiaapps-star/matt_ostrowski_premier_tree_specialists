@@ -16,6 +16,7 @@ const EXPECTED_TABLES = [
   'users',
   'sessions',
   'zip_code_to_county',
+  'app_settings',
 ];
 
 const EXPECTED_INDEXES = [

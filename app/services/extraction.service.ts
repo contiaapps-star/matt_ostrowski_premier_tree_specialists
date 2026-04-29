@@ -18,6 +18,7 @@ import { lookupCounty } from '../lib/zip-lookup.js';
 import { logger } from '../lib/logger.js';
 import { createOpenRouterClient, type OpenRouterClient } from '../clients/openrouter.client.js';
 import { categorizeScope } from './scope-categorizer.service.js';
+import { getAiSettings, getBusinessRules, zipMatchesServiceArea } from './settings.service.js';
 
 type DrizzleDb = BetterSQLite3Database<typeof schema>;
 
@@ -204,13 +205,19 @@ export async function extractLeadData(
     sourceLabel: lead.source,
   });
 
+  const ai = getAiSettings({ db });
+  const customExtractionPrompt = ai.extractionPrompt && ai.extractionPrompt.trim().length > 0
+    ? `${ai.extractionPrompt.trim()}\n\n${prompt}`
+    : prompt;
+
   let parsed: LlmExtraction | null = null;
   try {
     const result = await llm.complete({
+      model: ai.model,
       system: SYSTEM_PROMPT,
-      user: prompt,
+      user: customExtractionPrompt,
       jsonSchema: RESPONSE_SCHEMA,
-      maxTokens: 800,
+      maxTokens: ai.maxTokens > 0 ? Math.min(ai.maxTokens * 2, 1500) : 800,
     });
     parsed = (result.parsedJson as LlmExtraction | undefined) ?? null;
     if (!parsed && result.content) {
@@ -265,8 +272,11 @@ export async function extractLeadData(
       serviceAreaCounty = lookup.county;
       outOfServiceArea = false;
     } else {
+      // Fallback: honor the configurable zip-prefix list from settings.
+      const rules = getBusinessRules({ db });
+      const matchesPrefix = zipMatchesServiceArea(finalZip, rules.serviceArea.zipPrefixes);
       serviceAreaCounty = null;
-      outOfServiceArea = true;
+      outOfServiceArea = !matchesPrefix;
     }
   }
 

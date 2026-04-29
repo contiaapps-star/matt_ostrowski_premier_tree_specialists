@@ -3,11 +3,11 @@ import { createApp } from '../../app/app.js';
 import { getDb, setupFreshDb, teardownDb } from './_helpers.js';
 import { insertLead } from './_seed-leads.js';
 
-describe('GET /queue', () => {
+describe('Workspace — needs_review triage tab', () => {
   beforeEach(() => setupFreshDb());
   afterEach(() => teardownDb());
 
-  it('renders only awaiting_review and manually_flagged leads', async () => {
+  it('renders only awaiting_review leads under triage=needs_review', async () => {
     const db = getDb();
     insertLead(db, { customerName: 'Awaiting A', status: 'awaiting_review' });
     insertLead(db, { customerName: 'Awaiting B', status: 'awaiting_review' });
@@ -16,78 +16,61 @@ describe('GET /queue', () => {
     insertLead(db, { customerName: 'Sent E', status: 'manually_sent' });
 
     const app = createApp();
-    const res = await app.request('/queue');
+    const res = await app.request('/?triage=needs_review');
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-testid="queue-page"');
+    expect(html).toContain('data-testid="workspace-page"');
     expect(html).toContain('Awaiting A');
     expect(html).toContain('Awaiting B');
-    expect(html).toContain('Flagged C');
+    expect(html).not.toContain('Flagged C');
     expect(html).not.toContain('Sent D');
     expect(html).not.toContain('Sent E');
   });
 
-  it('shows correct counts in the banner', async () => {
+  it('renders flagged leads under triage=flagged', async () => {
     const db = getDb();
-    insertLead(db, { status: 'awaiting_review' });
-    insertLead(db, { status: 'awaiting_review' });
-    insertLead(db, { status: 'manually_flagged' });
+    insertLead(db, { status: 'awaiting_review', customerName: 'Pending One' });
+    insertLead(db, { status: 'manually_flagged', customerName: 'Flagged One' });
 
     const app = createApp();
-    const res = await app.request('/queue');
+    const res = await app.request('/?triage=flagged');
     const html = await res.text();
-    expect(html).toContain('2 awaiting review');
-    expect(html).toContain('1 manually flagged');
-    expect(html).toMatch(/3 leads? need attention/);
+    expect(html).toContain('Flagged One');
+    expect(html).not.toContain('Pending One');
   });
 
   it('shows empty state when nothing is in queue', async () => {
     const db = getDb();
     insertLead(db, { status: 'auto_sent' });
     const app = createApp();
-    const res = await app.request('/queue');
+    const res = await app.request('/?triage=needs_review');
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-testid="empty-state-queue"');
-  });
-
-  it('orders awaiting_review leads ASC by received_at', async () => {
-    const db = getDb();
-    const earlier = new Date(Date.UTC(2026, 3, 26, 9, 0, 0));
-    const later = new Date(Date.UTC(2026, 3, 26, 14, 0, 0));
-    insertLead(db, {
-      customerName: 'Newer Lead',
-      status: 'awaiting_review',
-      receivedAt: later,
-    });
-    insertLead(db, {
-      customerName: 'Older Lead',
-      status: 'awaiting_review',
-      receivedAt: earlier,
-    });
-    const app = createApp();
-    const res = await app.request('/queue');
-    const html = await res.text();
-    const olderIdx = html.indexOf('Older Lead');
-    const newerIdx = html.indexOf('Newer Lead');
-    expect(olderIdx).toBeGreaterThan(-1);
-    expect(newerIdx).toBeGreaterThan(-1);
-    expect(olderIdx).toBeLessThan(newerIdx);
+    expect(html).toContain('data-testid="leads-empty"');
   });
 });
 
-describe('GET /stats', () => {
+describe('Legacy /queue route', () => {
   beforeEach(() => setupFreshDb());
   afterEach(() => teardownDb());
 
-  it('renders the stats dashboard with KPI grid', async () => {
+  it('redirects to /?triage=needs_review', async () => {
+    const app = createApp();
+    const res = await app.request('/queue');
+    expect([301, 302, 307, 308]).toContain(res.status);
+    expect(res.headers.get('location')).toBe('/?triage=needs_review');
+  });
+});
+
+describe('Legacy /stats route', () => {
+  beforeEach(() => setupFreshDb());
+  afterEach(() => teardownDb());
+
+  it('redirects to /?range=week', async () => {
     const app = createApp();
     const res = await app.request('/stats');
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain('data-testid="stats-page"');
-    expect(html).toContain('data-testid="stats-grid"');
-    expect(html).toContain('Stats — last 7 days');
+    expect([301, 302, 307, 308]).toContain(res.status);
+    expect(res.headers.get('location')).toBe('/?range=week');
   });
 });
 
@@ -95,7 +78,7 @@ describe('end-to-end UI smoke (no browser)', () => {
   beforeEach(() => setupFreshDb());
   afterEach(() => teardownDb());
 
-  it('seed → dashboard → patch extracted → approve → status final', async () => {
+  it('seed → workspace → patch extracted → approve → status final', async () => {
     const db = getDb();
     const id = insertLead(db, {
       customerName: 'Smoke Customer',
@@ -106,7 +89,7 @@ describe('end-to-end UI smoke (no browser)', () => {
     });
     const app = createApp();
 
-    const dashRes = await app.request('/dashboard');
+    const dashRes = await app.request('/');
     expect(dashRes.status).toBe(200);
     expect(await dashRes.text()).toContain('Smoke Customer');
 

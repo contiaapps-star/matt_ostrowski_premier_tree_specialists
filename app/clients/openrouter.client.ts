@@ -9,6 +9,7 @@ export interface OpenRouterCompleteParams {
   user: string;
   jsonSchema?: Record<string, unknown>;
   maxTokens?: number;
+  temperature?: number;
 }
 
 export interface OpenRouterCompleteResult {
@@ -80,6 +81,7 @@ export class OpenRouterLiveClient implements OpenRouterClient {
         { role: 'user', content: params.user },
       ],
       ...(params.maxTokens ? { max_tokens: params.maxTokens } : {}),
+      ...(typeof params.temperature === 'number' ? { temperature: params.temperature } : {}),
     };
     if (params.jsonSchema) {
       body.response_format = {

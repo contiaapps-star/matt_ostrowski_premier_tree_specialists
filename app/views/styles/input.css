@@ -3,13 +3,18 @@
 @tailwind utilities;
 
 :root {
-  --color-brand: #15803d;
-  --color-brand-dark: #166534;
-  --color-brand-accent: #16a34a;
-  --color-status-auto: #15803d;
+  --color-brand: #d72f2a;
+  --color-brand-dark: #b3231f;
+  --color-brand-accent: #e2453f;
+  --color-accent: #1f6b3a;
+  --color-accent-dark: #195830;
+  --color-status-auto: #1f6b3a;
   --color-status-review: #b45309;
-  --color-status-flag: #b91c1c;
+  --color-status-flag: #be123c;
   --color-status-default: #475569;
+  --color-source-lsa: #4285f4;
+  --color-source-form: #d72f2a;
+  --color-source-answerforce: #f97316;
 }
 
 @layer components {

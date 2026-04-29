@@ -11,19 +11,23 @@ import {
 import { buildDemoLeadSpecs } from '../db/seed-data.js';
 import { generateUuidV7 } from './uuid.js';
 import { logger } from './logger.js';
+import { buildAllDemoLeads, insertDemoLeadInto } from '../db/demo-rich-seed.js';
 
 type DrizzleDb = BetterSQLite3Database<typeof schema>;
 
 export interface DemoLeadsBootstrapResult {
-  action: 'inserted' | 'skipped_has_leads';
+  action: 'inserted_rich' | 'inserted_basic' | 'skipped_has_leads';
   count: number;
 }
 
 /**
- * Insert the synthetic demo leads (8 leads spanning all sources, scope
- * categories, and statuses) at boot whenever the leads table is empty.
- * Idempotent: once any lead exists (real or seeded) this is a no-op, so a
- * Railway restart will never overwrite real data.
+ * Insert demo leads at boot when the leads table is empty. Loads the rich
+ * demo set (~70 leads — hand-crafted + procedurally generated with recent
+ * timestamps) so the dashboard has plenty of variety on a fresh DB.
+ *
+ * Idempotent: once any lead exists (real or seeded) this is a no-op so a
+ * Railway restart will never overwrite real data. If the rich seed throws
+ * for any reason, falls back to the basic 8-lead spec.
  */
 export function bootstrapDemoLeadsIfNeeded(db: DrizzleDb): DemoLeadsBootstrapResult {
   const countRow = db.select({ count: sql<number>`count(*)` }).from(leads).all()[0];
@@ -32,9 +36,24 @@ export function bootstrapDemoLeadsIfNeeded(db: DrizzleDb): DemoLeadsBootstrapRes
     return { action: 'skipped_has_leads', count: leadCount };
   }
 
+  try {
+    const allDemo = buildAllDemoLeads(50);
+    const baseTime = Date.now();
+    let inserted = 0;
+    db.transaction((tx) => {
+      for (const spec of allDemo) {
+        insertDemoLeadInto(tx, spec, baseTime);
+        inserted += 1;
+      }
+    });
+    logger.info({ count: inserted }, 'bootstrapped rich demo leads (leads table was empty)');
+    return { action: 'inserted_rich', count: inserted };
+  } catch (err) {
+    logger.warn({ err }, 'rich demo seed failed — falling back to basic 8-lead spec');
+  }
+
   const specs = buildDemoLeadSpecs();
   let inserted = 0;
-
   db.transaction((tx) => {
     for (const spec of specs) {
       const leadId = generateUuidV7();
@@ -73,6 +92,6 @@ export function bootstrapDemoLeadsIfNeeded(db: DrizzleDb): DemoLeadsBootstrapRes
     }
   });
 
-  logger.info({ count: inserted }, 'bootstrapped demo leads (leads table was empty)');
-  return { action: 'inserted', count: inserted };
+  logger.info({ count: inserted }, 'bootstrapped basic demo leads (8-lead spec)');
+  return { action: 'inserted_basic', count: inserted };
 }

@@ -43,7 +43,7 @@ authRoute.get('/login', (c) => {
   if (sessionCookie) {
     const valid = validateSession(sessionCookie);
     if (valid) {
-      return c.redirect('/dashboard');
+      return c.redirect('/');
     }
   }
   const csrfToken = ensureCsrfCookie(c);

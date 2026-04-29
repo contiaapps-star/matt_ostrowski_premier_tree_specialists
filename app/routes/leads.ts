@@ -5,24 +5,20 @@ import { getDb } from '../db/client.js';
 import {
   auditLog,
   leads,
-  leadSourceEvents,
   outboundMessages,
   type AuditLogRow,
   type Lead,
-  type LeadSourceEvent,
   type OutboundMessage,
 } from '../db/schema.js';
 import { generateUuidV7 } from '../lib/uuid.js';
 import { normalizeToE164 } from '../lib/e164.js';
 import { lookupCounty } from '../lib/zip-lookup.js';
 import { logger } from '../lib/logger.js';
-import { baseLayout, flashOob, reviewBadgeOob } from '../views/layouts/base.html.js';
+import { flashOob, reviewBadgeOob } from '../views/layouts/base.html.js';
 import {
   auditTrailRegion,
   extractedDataRegion,
-  leadDetailPage,
   leadSummaryCard,
-  notFoundPage,
   outboundStatusCard,
   responseRegion,
 } from '../views/pages/lead-detail.html.js';
@@ -49,16 +45,6 @@ function loadAuditEvents(leadId: string): AuditLogRow[] {
     .where(eq(auditLog.leadId, leadId))
     .orderBy(desc(auditLog.createdAt))
     .all() as AuditLogRow[];
-}
-
-function loadSourceEvents(leadId: string): LeadSourceEvent[] {
-  const db = getDb();
-  return db
-    .select()
-    .from(leadSourceEvents)
-    .where(eq(leadSourceEvents.leadId, leadId))
-    .orderBy(asc(leadSourceEvents.receivedAt))
-    .all() as LeadSourceEvent[];
 }
 
 function loadOutboundMessages(leadId: string): OutboundMessage[] {
@@ -148,41 +134,10 @@ function responseAndSummary(
   return honoHtml`${responseRegion(lead)}${summaryOob}${auditTrailOob(lead.id)}${outboundStatusOob(lead, lead.id)}${reviewBadgeOob(getReviewQueueCount())}${flashOob(flashText, kind)}`;
 }
 
-leadsRoute.get('/leads/:id', (c) => {
-  const id = c.req.param('id');
-  const lead = loadLead(id);
-  if (!lead) {
-    return c.html(
-      baseLayout({
-        title: 'Lead not found',
-        body: notFoundPage(id),
-        active: 'dashboard',
-        reviewQueueCount: getReviewQueueCount(),
-        userDisplayName: c.get('user')?.displayName ?? null,
-      }),
-      404,
-    );
-  }
-  const auditEvents = loadAuditEvents(id);
-  const sourceEvents = loadSourceEvents(id);
-  const outboundMessagesRows = loadOutboundMessages(id);
-  const body = leadDetailPage({
-    lead,
-    auditEvents,
-    sourceEvents,
-    outboundMessages: outboundMessagesRows,
-  });
-  return c.html(
-    baseLayout({
-      title: lead.customerName ?? 'Lead detail',
-      body,
-      active: 'dashboard',
-      reviewQueueCount: getReviewQueueCount(),
-      userDisplayName: c.get('user')?.displayName ?? null,
-      csrfToken: c.get('csrfToken'),
-    }),
-  );
-});
+// GET /leads/:id is handled by workspaceRoute (renders the workspace shell
+// with the detail panel pre-opened, supporting deep-links and history).
+// All mutation endpoints below stay in leadsRoute and return HTML fragments
+// (with OOB swaps) targeting region IDs rendered inside the detail panel.
 
 leadsRoute.patch('/leads/:id/extracted-data', async (c) => {
   const id = c.req.param('id');

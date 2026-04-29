@@ -142,10 +142,10 @@ describe('auth — login flow', () => {
     expect(res.headers.get('location')).toBe('/login');
   });
 
-  it('GET /dashboard with a valid session returns 200 HTML', async () => {
+  it('GET / with a valid session returns 200 HTML for the workspace', async () => {
     const app = createApp();
     const session = createTestSession();
-    const res = await app.request('/dashboard', {
+    const res = await app.request('/', {
       headers: {
         cookie: session.cookieHeader,
         'x-skip-test-bypass': '1',
@@ -154,7 +154,7 @@ describe('auth — login flow', () => {
     });
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain('data-testid="dashboard-page"');
+    expect(html).toContain('data-testid="workspace-page"');
   });
 
   it('blocks login after 5 failed attempts within 15 min for the same email', async () => {

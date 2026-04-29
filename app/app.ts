@@ -4,11 +4,11 @@ import { Hono } from 'hono';
 import { healthRoute } from './routes/health.js';
 import { intakeRoute } from './routes/api/intake.js';
 import { adminRoute } from './routes/api/admin.js';
+import { simulateRoute } from './routes/api/simulate.js';
 import { authRoute } from './routes/auth.js';
-import { dashboardRoute } from './routes/dashboard.js';
+import { workspaceRoute } from './routes/workspace.js';
 import { leadsRoute } from './routes/leads.js';
-import { queueRoute } from './routes/queue.js';
-import { statsRoute } from './routes/stats.js';
+import { settingsRoute } from './routes/settings.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
 import { notFoundPage } from './views/pages/errors.html.js';
@@ -61,6 +61,7 @@ export function createApp(): Hono {
   app.route('/health', healthRoute);
   app.route('/api/intake', intakeRoute);
   app.route('/api/admin', adminRoute);
+  app.route('/api/simulate-lead', simulateRoute);
   app.route('/', authRoute);
 
   // Static files served from /public.
@@ -87,11 +88,12 @@ export function createApp(): Hono {
     return res;
   });
 
-  // Authenticated UI routes.
-  app.route('/', dashboardRoute);
+  // Authenticated UI routes. workspaceRoute is the SPA shell — owns GET /,
+  // GET /leads/:id, /partials/*, and 302 redirects from the legacy
+  // /dashboard, /queue, /stats paths. leadsRoute owns mutation endpoints.
+  app.route('/', workspaceRoute);
   app.route('/', leadsRoute);
-  app.route('/', queueRoute);
-  app.route('/', statsRoute);
+  app.route('/', settingsRoute);
 
   app.notFound((c) => {
     if (c.req.header('accept')?.includes('text/html')) {

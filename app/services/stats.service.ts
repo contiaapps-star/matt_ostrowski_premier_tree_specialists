@@ -6,11 +6,16 @@ import { auditLog, leads, type LeadSource } from '../db/schema.js';
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const CACHE_TTL_MS = 60_000;
 
+export interface ComputeStatsOptions {
+  hours?: number;
+}
+
 export interface ResponseTimeStats {
   count: number;
   avgMinutes: number | null;
   p50Minutes: number | null;
   p95Minutes: number | null;
+  subOneMinutePct: number | null;
 }
 
 export interface DailyVolumePoint {
@@ -37,23 +42,25 @@ export interface StatsSnapshot {
   cachedAt: Date;
 }
 
-let cached: { snapshot: StatsSnapshot; expiresAt: number } | null = null;
+const cacheByHours = new Map<number, { snapshot: StatsSnapshot; expiresAt: number }>();
 
 export function clearStatsCache(): void {
-  cached = null;
+  cacheByHours.clear();
 }
 
-export function computeStats(now: Date = new Date()): StatsSnapshot {
+export function computeStats(now: Date = new Date(), options: ComputeStatsOptions = {}): StatsSnapshot {
+  const windowMs = options.hours != null ? options.hours * 60 * 60 * 1000 : SEVEN_DAYS_MS;
+  const cached = cacheByHours.get(windowMs);
   if (cached && cached.expiresAt > now.getTime()) {
     return cached.snapshot;
   }
-  const snapshot = computeFresh(now);
-  cached = { snapshot, expiresAt: now.getTime() + CACHE_TTL_MS };
+  const snapshot = computeFresh(now, windowMs);
+  cacheByHours.set(windowMs, { snapshot, expiresAt: now.getTime() + CACHE_TTL_MS });
   return snapshot;
 }
 
-function computeFresh(now: Date): StatsSnapshot {
-  const windowStart = new Date(now.getTime() - SEVEN_DAYS_MS);
+function computeFresh(now: Date, windowMs: number): StatsSnapshot {
+  const windowStart = new Date(now.getTime() - windowMs);
   const db = getDb();
 
   // Total leads received in window.
@@ -112,17 +119,20 @@ function computeResponseTime(windowStart: Date): ResponseTimeStats {
     .sort((a, b) => a - b);
 
   if (minutes.length === 0) {
-    return { count: 0, avgMinutes: null, p50Minutes: null, p95Minutes: null };
+    return { count: 0, avgMinutes: null, p50Minutes: null, p95Minutes: null, subOneMinutePct: null };
   }
 
   const avg = minutes.reduce((a, b) => a + b, 0) / minutes.length;
   const p50 = percentile(minutes, 0.5);
   const p95 = percentile(minutes, 0.95);
+  const underOne = minutes.filter((m) => m < 1).length;
+  const subOneMinutePct = round2((underOne / minutes.length) * 100);
   return {
     count: minutes.length,
     avgMinutes: round2(avg),
     p50Minutes: round2(p50),
     p95Minutes: round2(p95),
+    subOneMinutePct,
   };
 }
 

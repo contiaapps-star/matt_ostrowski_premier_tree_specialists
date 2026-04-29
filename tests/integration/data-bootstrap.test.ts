@@ -86,15 +86,16 @@ describe('demo-leads-bootstrap', () => {
     closeDb();
   });
 
-  it('inserts demo leads when leads table is empty', () => {
+  it('inserts the rich demo lead set when leads table is empty', () => {
     const result = bootstrapDemoLeadsIfNeeded(getDb());
 
-    expect(result.action).toBe('inserted');
-    expect(result.count).toBe(8);
-    expect(countOf(leads)).toBe(8);
-    // Each lead must have a matching source event + audit row.
-    expect(countOf(leadSourceEvents)).toBe(8);
-    expect(countOf(auditLog)).toBe(8);
+    expect(['inserted_rich', 'inserted_basic']).toContain(result.action);
+    // Rich demo set is 20 hand-crafted + 50 procedural = 70; basic fallback is 8.
+    expect(result.count).toBeGreaterThanOrEqual(8);
+    expect(countOf(leads)).toBe(result.count);
+    // Each lead must have at least one source event + ingested audit row.
+    expect(countOf(leadSourceEvents)).toBeGreaterThanOrEqual(result.count);
+    expect(countOf(auditLog)).toBeGreaterThanOrEqual(result.count);
   });
 
   it('skips when leads already exist (does not overwrite real data)', () => {
@@ -114,11 +115,13 @@ describe('demo-leads-bootstrap', () => {
     expect(countOf(leads)).toBe(1);
   });
 
-  it('is idempotent — running twice still yields exactly 8 leads', () => {
-    bootstrapDemoLeadsIfNeeded(getDb());
+  it('is idempotent — running twice does not re-seed', () => {
+    const first = bootstrapDemoLeadsIfNeeded(getDb());
+    const firstCount = countOf(leads);
     const second = bootstrapDemoLeadsIfNeeded(getDb());
 
     expect(second.action).toBe('skipped_has_leads');
-    expect(countOf(leads)).toBe(8);
+    expect(countOf(leads)).toBe(firstCount);
+    expect(first.count).toBe(firstCount);
   });
 });

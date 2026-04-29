@@ -27,9 +27,9 @@ export function loginPage({
 <body class="bg-slate-50 text-slate-900 antialiased font-sans min-h-screen flex items-center justify-center px-4">
   <main class="w-full max-w-sm" data-testid="login-page">
     <div class="text-center mb-6">
-      <span class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white text-xl font-bold">P</span>
-      <h1 class="mt-3 text-xl font-semibold text-slate-900">Premier Tree Specialists</h1>
-      <p class="text-sm text-slate-500">Lead intake dashboard</p>
+      <img src="/public/logo.svg" alt="" aria-hidden="true" class="mx-auto h-14 w-14" />
+      <h1 class="mt-3 text-xl font-bold text-brand-700">Premier Tree Specialists</h1>
+      <p class="text-sm text-slate-500">Lead intake workspace</p>
     </div>
     ${devCredentials
       ? html`<div

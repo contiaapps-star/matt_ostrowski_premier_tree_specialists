@@ -13,6 +13,7 @@ import type { SmsClient } from '../clients/agent-phone.client.js';
 import { detectEscalation } from './escalation-detector.service.js';
 import { findRelevantFaqs } from './faq-matcher.service.js';
 import { dispatchLead, type DispatchResult } from './outbound-dispatcher.service.js';
+import { getAiSettings, getBusinessRules } from './settings.service.js';
 
 type DrizzleDb = BetterSQLite3Database<typeof schema>;
 
@@ -288,7 +289,10 @@ export async function generateResponse(
   }
 
   // Step 1: Pre-LLM escalation detection (regex on scope_raw + honor existing flag).
-  const detected = detectEscalation(lead.scopeRaw);
+  const businessRules = getBusinessRules({ db });
+  const detected = detectEscalation(lead.scopeRaw, {
+    customKeywords: businessRules.escalationKeywords,
+  });
   const isEscalated = detected.triggered || lead.escalationTriggered === true;
   if (isEscalated) {
     const reason = detected.triggered
@@ -307,14 +311,17 @@ export async function generateResponse(
   const faqs = findRelevantFaqs(lead.scopeRaw, lead.scopeCategory ?? 'other', { db });
 
   // Step 3: Call LLM.
+  const ai = getAiSettings({ db });
   const prompt = buildResponsePrompt(lead, faqs);
   let parsed: LlmResponse | null = null;
   try {
     const result = await llm.complete({
-      system: SYSTEM_PROMPT,
+      model: ai.model,
+      system: ai.systemPrompt && ai.systemPrompt.trim().length > 0 ? ai.systemPrompt : SYSTEM_PROMPT,
       user: prompt,
       jsonSchema: RESPONSE_SCHEMA,
-      maxTokens: 1000,
+      maxTokens: ai.maxTokens > 0 ? ai.maxTokens : 1000,
+      temperature: ai.temperature,
     });
     parsed = (result.parsedJson as LlmResponse | undefined) ?? null;
     if (!parsed && result.content) {

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.premiertreesllc.com)",
+      "WebFetch(domain:david-salib-fleetwood-foods-production.up.railway.app)"
+    ]
+  }
+}
