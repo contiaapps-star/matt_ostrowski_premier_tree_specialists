@@ -51,6 +51,11 @@ const ConfigSchema = z
     ADMIN_EMAIL: z.string().optional().default(''),
     ADMIN_PASSWORD: z.string().optional().default(''),
     ADMIN_DISPLAY_NAME: z.string().default('Admin'),
+
+    // One-shot flag: when true, wipes lead-related tables + reference data
+    // (zips, FAQs) at boot and re-seeds the rich demo set. Toggle on for one
+    // deploy, then turn back off — leaving it on will reset every restart.
+    RESEED_ON_BOOT: booleanString.default(false),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === 'production') {

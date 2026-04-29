@@ -43,3 +43,15 @@ restartPolicyMaxRetries = 3
 # automatically at boot whenever their tables are empty. No env var required.
 # A restart will never overwrite real data — once any lead exists, the demo
 # bootstrap is a no-op.
+#
+# Force a fresh demo seed (e.g. to push updated demo data to a Railway
+# environment that already has rows):
+#   1. In Railway → Service → Variables, set RESEED_ON_BOOT=true
+#   2. Redeploy (or restart the service). The server wipes leads, source
+#      events, audit log, outbound messages, FAQs, and zip lookups, then
+#      re-inserts the rich demo set + reference data. Users, sessions, and
+#      app_settings (saved business rules / AI prompts) are preserved.
+#   3. Set RESEED_ON_BOOT=false (or delete the variable) and redeploy again
+#      so the next restart does NOT wipe the DB.
+# Leave RESEED_ON_BOOT unset/false in steady state — every restart with it
+# on will destroy real leads.
