@@ -74,7 +74,7 @@ function inboundSection(agentMailAddress: string) {
 function businessRulesSection(rules: BusinessRules, csrf: string) {
   const keywordsText = rules.escalationKeywords.join(', ');
   const prefixesText = rules.serviceArea.zipPrefixes.join(', ');
-  return html`<section id="business-rules" class="space-y-3" data-testid="business-rules-section">
+  return html`<section id="business-rules" class="space-y-3" data-testid="business-rules-section" data-tour="settings-business-rules">
     <header>
       <h2 class="text-base font-semibold text-slate-900 flex items-center gap-1.5">
         <span aria-hidden="true">⚖️</span> Business Rules
@@ -129,7 +129,7 @@ function businessRulesSection(rules: BusinessRules, csrf: string) {
 }
 
 function aiSettingsSection(ai: AiSettings, csrf: string) {
-  return html`<section id="ai-settings" class="space-y-3" data-testid="ai-settings-section">
+  return html`<section id="ai-settings" class="space-y-3" data-testid="ai-settings-section" data-tour="settings-ai">
     <header>
       <h2 class="text-base font-semibold text-slate-900 flex items-center gap-1.5">
         <span aria-hidden="true">🤖</span> AI &amp; Prompt
@@ -188,7 +188,7 @@ function aiSettingsSection(ai: AiSettings, csrf: string) {
 }
 
 function faqSection(faqMarkdown: string, csrf: string) {
-  return html`<section id="faq-knowledge" class="space-y-3" data-testid="faq-section">
+  return html`<section id="faq-knowledge" class="space-y-3" data-testid="faq-section" data-tour="settings-faq">
     <header>
       <h2 class="text-base font-semibold text-slate-900 flex items-center gap-1.5">
         <span aria-hidden="true">📚</span> FAQ

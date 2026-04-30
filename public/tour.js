@@ -100,16 +100,16 @@
         popover: {
           title: 'Settings (next stop)',
           description:
-            'Last stop before we wrap. We’ll jump to Settings so you can see the AI rules, FAQ, and the email address you’ll forward leads to.',
+            'Last stop before we wrap. Click <b>Next</b> and we’ll jump to Settings so you can see the inbound email, business rules, AI prompt, and FAQ — everything that drives how the system answers leads.',
           side: 'over',
           align: 'center',
-        },
-        onHighlightStarted: function () {
-          // Hand off to /settings — the page bootstrap reads ?tour=7 and resumes
-          // at step 8 (the Inbound section) once the page loads.
-          setTimeout(function () {
+          // Hand off to /settings on Next — the page bootstrap reads ?tour=7
+          // and resumes at the Inbound section once the page loads. We do this
+          // in onNextClick (not onHighlightStarted) so the user can actually
+          // read this popover before being navigated away.
+          onNextClick: function () {
             location.href = '/settings?tour=7';
-          }, 400);
+          },
         },
       },
       {
@@ -119,6 +119,36 @@
           description:
             'Set Gmail filters and your website-form / AnswerForce notifications to forward to this address. The system parses every inbound message and creates a lead.',
           side: 'bottom',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="settings-business-rules"]',
+        popover: {
+          title: 'Business Rules',
+          description:
+            '<b>Escalation keywords</b> always force a lead into manual review — regardless of the AI’s confidence. Add things like <i>emergency</i>, <i>tree on house</i>, <i>lawsuit</i>. Below that, <b>service-area ZIP prefixes</b> (e.g. <code>440</code> for Cleveland metro) decide which leads count as in-area; anything outside is auto-flagged.',
+          side: 'top',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="settings-ai"]',
+        popover: {
+          title: 'AI & Prompt',
+          description:
+            'The brain of the system. Pick the OpenRouter <b>model</b>, tune <b>max tokens</b> and <b>temperature</b> (0.3–0.5 is the sweet spot), and edit the <b>system prompt</b> — the persona and rules the AI follows on every reply. The <b>extraction prompt</b> below it controls how raw inbound emails get parsed into structured fields.',
+          side: 'top',
+          align: 'start',
+        },
+      },
+      {
+        element: '[data-tour="settings-faq"]',
+        popover: {
+          title: 'FAQ Knowledge Base',
+          description:
+            'Free-form markdown — paste in question / answer pairs and the AI uses them verbatim when drafting replies. This is where the <b>Oak Wilt season</b> rule, pricing answers, scheduling info, and credentials all live. Edit it any time; the next inbound lead picks up the change.',
+          side: 'top',
           align: 'start',
         },
       },
