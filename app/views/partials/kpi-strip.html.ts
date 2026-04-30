@@ -1,12 +1,10 @@
 import { html } from 'hono/html';
 import type { StatsSnapshot } from '../../services/stats.service.js';
-import type { TimeRangeKey } from '../../lib/time-range.js';
-import { TIME_RANGES } from '../../lib/time-range.js';
 
 interface KpiCardProps {
   label: string;
   value: string;
-  accent?: 'brand' | 'accent' | 'amber' | 'rose' | 'slate';
+  accent?: 'brand' | 'accent' | 'amber' | 'slate';
   testid: string;
   hint?: string;
 }
@@ -14,9 +12,8 @@ interface KpiCardProps {
 function kpiCard({ label, value, accent = 'slate', testid, hint }: KpiCardProps) {
   const accentClass = {
     brand: 'text-brand-700',
-    accent: 'text-accent-700',
+    accent: 'text-green-700',
     amber: 'text-amber-700',
-    rose: 'text-rose-700',
     slate: 'text-slate-800',
   }[accent];
   return html`<div
@@ -31,7 +28,6 @@ function kpiCard({ label, value, accent = 'slate', testid, hint }: KpiCardProps)
 
 export interface KpiStripProps {
   snapshot: StatsSnapshot;
-  range: TimeRangeKey;
   pollUrl: string;
 }
 
@@ -44,30 +40,31 @@ function fmtCount(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
 }
 
-export function kpiStrip({ snapshot, range, pollUrl }: KpiStripProps) {
+export function kpiStrip({ snapshot, pollUrl }: KpiStripProps) {
   const totalProcessed = snapshot.autoSendRate.totalProcessed;
   const autoSent = snapshot.autoSendRate.autoSent;
-  const automationPct = snapshot.autoSendRate.ratePct;
-  const subOne = snapshot.responseTime.subOneMinutePct;
-  const needsReview = Math.max(0, totalProcessed - autoSent - snapshot.manualFlagCount.total);
-  const flagged = snapshot.manualFlagCount.total;
-  const rangeLabel = TIME_RANGES[range].label;
+  const responseRatePct = snapshot.autoSendRate.ratePct;
+  // "Needs Review" = everything that landed in the inbox during the window and
+  // hasn't been auto/manually sent yet (awaiting review, flagged, failed,
+  // ingested, etc.).
+  const needsReview = Math.max(0, snapshot.totalLeadsInWindow - autoSent);
+  void totalProcessed;
   return html`<section
       id="kpi-strip-region"
-      class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6"
+      class="grid grid-cols-2 gap-3 sm:grid-cols-4"
       data-testid="kpi-strip"
       data-tour="kpis"
       hx-get="${pollUrl}"
       hx-trigger="every 60s[document.visibilityState==='visible']"
       hx-swap="outerHTML"
-      aria-label="${rangeLabel} key metrics"
+      aria-label="Last 24 hours key metrics"
     >
       ${kpiCard({
         label: 'Total Leads',
         value: fmtCount(snapshot.totalLeadsInWindow),
         accent: 'slate',
         testid: 'kpi-total',
-        hint: rangeLabel,
+        hint: 'last 24h',
       })}
       ${kpiCard({
         label: 'Auto-Sent',
@@ -82,22 +79,11 @@ export function kpiStrip({ snapshot, range, pollUrl }: KpiStripProps) {
         testid: 'kpi-needs-review',
       })}
       ${kpiCard({
-        label: 'Flagged',
-        value: fmtCount(flagged),
-        accent: 'rose',
-        testid: 'kpi-flagged',
-      })}
-      ${kpiCard({
-        label: 'Automation Rate',
-        value: fmtPct(automationPct),
+        label: 'Response Rate',
+        value: fmtPct(responseRatePct),
         accent: 'brand',
-        testid: 'kpi-automation-rate',
-      })}
-      ${kpiCard({
-        label: '< 1 Min Response',
-        value: fmtPct(subOne),
-        accent: 'accent',
-        testid: 'kpi-sub-one-min',
+        testid: 'kpi-response-rate',
+        hint: 'auto-handled',
       })}
     </section>`;
 }

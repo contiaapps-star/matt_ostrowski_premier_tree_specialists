@@ -158,6 +158,54 @@ async function safeReadText(res: Response): Promise<string> {
   }
 }
 
+interface GenericDraft {
+  response_text: string;
+  confidence: number;
+  confidence_reasoning: string;
+  escalation_recheck: boolean;
+}
+
+/**
+ * Build a brand-appropriate generic draft when the stub has no specific
+ * fixture for the customer. Pulls the first name from the prompt's "Lead
+ * extracted data" block so the draft addresses the customer correctly,
+ * mentions oak season if the original message contains "oak", and hints at
+ * out-of-service-area when flagged in the prompt.
+ */
+function buildGenericResponseDraft(prompt: string): GenericDraft {
+  const nameLine = /-\s*Name:\s*([^\n]+)/i.exec(prompt);
+  const fullName = nameLine?.[1]?.trim() ?? '';
+  const firstName =
+    !fullName || /^\(unknown\)?$/i.test(fullName) ? '' : fullName.split(/\s+/)[0] ?? '';
+  const greeting = firstName ? `Hi ${firstName}` : 'Hi there';
+
+  const lower = prompt.toLowerCase();
+  const isOutOfArea = /out of service area:\s*yes/i.test(prompt);
+  const mentionsOak = /\boak\b/.test(lower);
+
+  const oakNote = mentionsOak
+    ? ' Oak trimming season in Ohio runs November through March only — we can still book an estimate now and schedule the work for next season.'
+    : '';
+  const areaLine = isOutOfArea
+    ? ' Unfortunately your address looks to be outside our Cleveland and Columbus service areas — apologies for the inconvenience.'
+    : ' One of our team members will reach out shortly to schedule a complimentary on-site estimate.';
+
+  const response_text =
+    `${greeting} — thanks for reaching out to Premier Tree Specialists!${areaLine}${oakNote}\n\n` +
+    'Our ISA-certified arborists carry 80+ years of combined experience and full insurance. ' +
+    'Reply to this message or call us at (216) 245-8908 (Cleveland) or (614) 526-2266 (Columbus) ' +
+    'if you need anything sooner.\n\n— Premier Tree Specialists Team';
+
+  return {
+    response_text,
+    confidence: isOutOfArea ? 0.55 : 0.82,
+    confidence_reasoning: firstName
+      ? 'Generic draft used (no specific FAQ match); customer first name extracted; tone aligns with brand voice.'
+      : 'Generic draft used (no customer name available); tone aligns with brand voice.',
+    escalation_recheck: false,
+  };
+}
+
 interface StubOptions {
   fixturesDir?: string;
 }
@@ -185,6 +233,17 @@ export class OpenRouterStubClient implements OpenRouterClient {
       if (allMatch) {
         return this.loadFixture(rule.fixture);
       }
+    }
+
+    // Generate-response task: when no specific fixture matched the customer
+    // name, return a brand-appropriate draft addressing whoever we can
+    // extract from the prompt by first name. Without this fallback, manual
+    // "Try regenerate again" on demo leads (which exercise unmatched names)
+    // returns extraction-shaped JSON, fails the response schema check, and
+    // leaves the lead with an empty draft.
+    if (promptLower.includes('[task: generate_response]')) {
+      const result = buildGenericResponseDraft(params.user);
+      return { content: JSON.stringify(result), parsedJson: result };
     }
 
     const generic = {

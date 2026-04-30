@@ -15,7 +15,7 @@ export function renderErrorPage({ code, title, message, detail }: ErrorPageOptio
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${code} ${title} — Premier Tree Specialists</title>
   <link rel="stylesheet" href="/styles.css" />
-  <link rel="icon" href="/public/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/public/images/premier-tree-logo.png" type="image/png" />
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased font-sans min-h-screen flex items-center justify-center px-4">
   <main class="max-w-md w-full text-center" data-testid="error-page" data-error-code="${code}">

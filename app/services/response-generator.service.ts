@@ -3,7 +3,7 @@ import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { type Config, config as appConfig } from '../config.js';
 import { getDb } from '../db/client.js';
 import * as schema from '../db/schema.js';
-import { type FaqEntry, type Lead, auditLog, leads } from '../db/schema.js';
+import { type Lead, auditLog, leads } from '../db/schema.js';
 import { generateUuidV7 } from '../lib/uuid.js';
 import { logger } from '../lib/logger.js';
 import { createOpenRouterClient, type OpenRouterClient } from '../clients/openrouter.client.js';
@@ -11,7 +11,7 @@ import type { ArboStarClient } from '../clients/arbostar.client.js';
 import type { EmailClient } from '../clients/sendgrid.client.js';
 import type { SmsClient } from '../clients/agent-phone.client.js';
 import { detectEscalation } from './escalation-detector.service.js';
-import { findRelevantFaqs } from './faq-matcher.service.js';
+import { getFaqMarkdown } from './faq.service.js';
 import { dispatchLead, type DispatchResult } from './outbound-dispatcher.service.js';
 import { getAiSettings, getBusinessRules } from './settings.service.js';
 
@@ -74,7 +74,7 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function buildResponsePrompt(lead: Lead, faqs: FaqEntry[]): string {
+function buildResponsePrompt(lead: Lead, faqMarkdown: string): string {
   const dataLines: string[] = [
     `- Name: ${lead.customerName ?? '(unknown)'}`,
     `- Phone: ${lead.customerPhoneE164 ?? '(unknown)'}`,
@@ -89,15 +89,9 @@ function buildResponsePrompt(lead: Lead, faqs: FaqEntry[]): string {
     `- Source: ${lead.source}`,
   ];
 
-  const faqLines: string[] = [];
-  if (faqs.length === 0) {
-    faqLines.push('(no FAQs matched — use professional courteous default tone.)');
-  } else {
-    faqs.forEach((f, i) => {
-      faqLines.push(`${i + 1}. [${f.category}] Q: ${f.question}`);
-      faqLines.push(`   A: ${f.answer}`);
-    });
-  }
+  const faqBlock = faqMarkdown.trim().length > 0
+    ? faqMarkdown.trim()
+    : '(no FAQ content configured — use professional courteous default tone.)';
 
   return [
     '[task: generate_response]',
@@ -110,8 +104,10 @@ function buildResponsePrompt(lead: Lead, faqs: FaqEntry[]): string {
     lead.scopeRaw,
     '"""',
     '',
-    'Relevant FAQ entries (use these for canonical answers, especially the Oak Season rule when oak trees + active oak season):',
-    ...faqLines,
+    'FAQ knowledge base (canonical answers — match the customer message against these and use the matching answer verbatim where relevant):',
+    '"""',
+    faqBlock,
+    '"""',
     '',
     'Generate a personalized first response addressing the customer directly. Do NOT promise specific scheduling or pricing — say a team member will follow up to schedule a complimentary estimate. Mention ISA-certified arborist credentials when relevant. Sign off as "Premier Tree Specialists Team".',
     '',
@@ -307,12 +303,12 @@ export async function generateResponse(
     };
   }
 
-  // Step 2: Find relevant FAQs.
-  const faqs = findRelevantFaqs(lead.scopeRaw, lead.scopeCategory ?? 'other', { db });
+  // Step 2: Pull FAQ markdown (single source of truth — replaces per-row matching).
+  const faqMarkdown = getFaqMarkdown({ db });
 
   // Step 3: Call LLM.
   const ai = getAiSettings({ db });
-  const prompt = buildResponsePrompt(lead, faqs);
+  const prompt = buildResponsePrompt(lead, faqMarkdown);
   let parsed: LlmResponse | null = null;
   try {
     const result = await llm.complete({
@@ -393,7 +389,9 @@ export async function generateResponse(
     llmConfidence,
     dataCompleteness,
     reasoning: parsed.confidence_reasoning ?? '',
-    faqsUsed: faqs.map((f) => f.category),
+    // FAQ matching now happens implicitly inside the LLM via the markdown
+    // context — we no longer surface a per-category "faqs_used" list.
+    faqsUsed: [],
     escalationTriggered: finalEscalationTriggered ?? false,
     escalationReason: finalEscalationReason,
     routingReason,

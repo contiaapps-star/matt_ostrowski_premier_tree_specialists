@@ -1,10 +1,6 @@
-import { html, raw } from 'hono/html';
+import { html } from 'hono/html';
 import type { LeadSourceEvent } from '../../db/schema.js';
 import { formatDateET, formatSource } from '../../lib/format.js';
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function tryParseJson(text: string | null | undefined): unknown {
   if (!text) return null;
@@ -84,7 +80,7 @@ function emailCard(parsed: ParsedEmail) {
     </div>
     <div class="px-3 py-3">
       ${parsed.body
-        ? html`<pre class="whitespace-pre-wrap font-sans text-sm text-slate-800 leading-relaxed">${escapeHtml(parsed.body)}</pre>`
+        ? html`<pre class="whitespace-pre-wrap font-sans text-sm text-slate-800 leading-relaxed">${parsed.body}</pre>`
         : html`<p class="text-sm text-slate-500 italic">(empty body)</p>`}
     </div>
   </div>`;
@@ -160,7 +156,10 @@ function rawJsonFallback(rawPayload: string) {
   } catch {
     /* keep raw */
   }
-  return html`<pre class="overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">${escapeHtml(pretty)}</pre>`;
+  // hono/html auto-escapes string interpolations, so we hand it the plain
+  // string. Pre-escaping with our own escapeHtml() caused double-escaping
+  // (`&quot;` was re-encoded to `&amp;quot;`).
+  return html`<pre class="overflow-x-auto rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">${pretty}</pre>`;
 }
 
 function sourceBadge(source: string) {
@@ -218,5 +217,3 @@ export function sourceEventList(events: LeadSourceEvent[]) {
   }
   return html`<div class="space-y-4">${events.map((e) => sourceEventCard(e))}</div>`;
 }
-
-void raw;

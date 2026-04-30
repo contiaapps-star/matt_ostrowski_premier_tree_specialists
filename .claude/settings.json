@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:www.premiertreesllc.com)",
-      "WebFetch(domain:david-salib-fleetwood-foods-production.up.railway.app)"
+      "WebFetch(domain:david-salib-fleetwood-foods-production.up.railway.app)",
+      "Bash(curl -L --max-time 30 -o d:/SAGAN/matt_ostrowski_premier_tree_specialists/public/images/premier-tree-logo.png \"https://le-cdn.hibuwebsites.com/342a74771113462d86540dfa083a98f2/dms3rep/multi/opt/premier-tree-logo-1920w.png\" -A \"Mozilla/5.0\" -w \"HTTP %{http_code} %{size_download} bytes\\\\n\" -s)"
     ]
   }
 }

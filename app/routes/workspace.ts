@@ -14,13 +14,7 @@ import {
   type OutboundMessage,
 } from '../db/schema.js';
 import { authMiddleware, type AuthVariables } from '../middleware/auth.js';
-import {
-  DEFAULT_TIME_RANGE,
-  parseTimeRange,
-  rangeStartDate,
-  rangeHours,
-  type TimeRangeKey,
-} from '../lib/time-range.js';
+import { rangeStartDate } from '../lib/time-range.js';
 import { computeStats } from '../services/stats.service.js';
 import { baseLayout } from '../views/layouts/base.html.js';
 import {
@@ -30,6 +24,7 @@ import {
 import { kpiStrip } from '../views/partials/kpi-strip.html.js';
 import { notFoundPage } from '../views/pages/lead-detail.html.js';
 import {
+  DEFAULT_TRIAGE,
   TRIAGE_KEYS,
   leadsListRegion,
   workspacePage,
@@ -42,17 +37,35 @@ export const workspaceRoute = new Hono<{ Variables: AuthVariables }>();
 workspaceRoute.use('*', authMiddleware);
 
 const PAGE_LIMIT = 50;
+const WORKSPACE_HOURS = 24;
+
+// Per Zaki's review: only two visible buckets matter to the user. "Needs
+// Review" sweeps every status that hasn't been auto/manually sent yet —
+// awaiting_review, pending extraction, escalations, failures, intermediate
+// pipeline states. "Auto-Sent" is the handled bucket (auto + manual). "All"
+// drops the status filter entirely.
+const HANDLED_STATUSES: readonly Lead['status'][] = ['auto_sent', 'manually_sent'];
+const NEEDS_REVIEW_STATUSES: readonly Lead['status'][] = [
+  'ingested',
+  'extracting',
+  'extracted',
+  'responding',
+  'awaiting_review',
+  'manually_flagged',
+  'failed',
+];
 
 const TRIAGE_STATUS_MAP: Record<TriageKey, readonly Lead['status'][] | null> = {
   all: null,
-  auto: ['auto_sent', 'manually_sent'],
-  needs_review: ['awaiting_review'],
-  flagged: ['manually_flagged', 'failed'],
+  auto: HANDLED_STATUSES,
+  needs_review: NEEDS_REVIEW_STATUSES,
 };
 
 function parseTriage(value: string | null): TriageKey {
-  if (!value) return 'all';
-  return (TRIAGE_KEYS as readonly string[]).includes(value) ? (value as TriageKey) : 'all';
+  if (!value) return DEFAULT_TRIAGE;
+  return (TRIAGE_KEYS as readonly string[]).includes(value)
+    ? (value as TriageKey)
+    : DEFAULT_TRIAGE;
 }
 
 function parseSource(value: string | null): LeadSource | null {
@@ -62,14 +75,17 @@ function parseSource(value: string | null): LeadSource | null {
 
 function parseFilters(qp: URLSearchParams): WorkspaceFilters {
   return {
-    range: parseTimeRange(qp.get('range')),
     source: parseSource(qp.get('source')),
     triage: parseTriage(qp.get('triage')),
   };
 }
 
+function workspaceWindowStart(): Date {
+  return rangeStartDate('24h');
+}
+
 function buildWhere(filters: WorkspaceFilters): SQL | undefined {
-  const conditions: SQL[] = [gte(leads.receivedAt, rangeStartDate(filters.range))];
+  const conditions: SQL[] = [gte(leads.receivedAt, workspaceWindowStart())];
   if (filters.source) {
     conditions.push(eq(leads.source, filters.source));
   }
@@ -97,7 +113,7 @@ function selectLeads(filters: WorkspaceFilters): { items: Lead[]; total: number 
 
 function computeTriageCounts(filters: WorkspaceFilters): Record<TriageKey, number> {
   const db = getDb();
-  const baseRange = gte(leads.receivedAt, rangeStartDate(filters.range));
+  const baseRange = gte(leads.receivedAt, workspaceWindowStart());
   const sourceCond = filters.source ? eq(leads.source, filters.source) : null;
 
   function countFor(triage: TriageKey): number {
@@ -114,7 +130,6 @@ function computeTriageCounts(filters: WorkspaceFilters): Record<TriageKey, numbe
     all: countFor('all'),
     auto: countFor('auto'),
     needs_review: countFor('needs_review'),
-    flagged: countFor('flagged'),
   };
 }
 
@@ -166,7 +181,7 @@ function renderShell(c: Context<{ Variables: AuthVariables }>, activeLeadId: str
   const filters = parseFilters(url.searchParams);
   const { items, total } = selectLeads(filters);
   const triageCounts = computeTriageCounts(filters);
-  const snapshot = computeStats(new Date(), { hours: rangeHours(filters.range) });
+  const snapshot = computeStats(new Date(), { hours: WORKSPACE_HOURS });
   let activeLead = null;
   if (activeLeadId) {
     const lead = loadLead(activeLeadId);
@@ -219,11 +234,10 @@ workspaceRoute.get('/partials/leads-list', (c) => {
 
 workspaceRoute.get('/partials/kpi-strip', (c) => {
   const url = new URL(c.req.url);
-  const range: TimeRangeKey = parseTimeRange(url.searchParams.get('range'));
-  const snapshot = computeStats(new Date(), { hours: rangeHours(range) });
+  const snapshot = computeStats(new Date(), { hours: WORKSPACE_HOURS });
   const search = url.searchParams.toString();
   const pollUrl = `/partials/kpi-strip${search ? `?${search}` : ''}`;
-  return c.html(kpiStrip({ snapshot, range, pollUrl }));
+  return c.html(kpiStrip({ snapshot, pollUrl }));
 });
 
 workspaceRoute.get('/partials/lead-detail/:id', (c) => {
@@ -245,6 +259,4 @@ workspaceRoute.get('/dashboard', (c) => {
   return c.redirect(params ? `/?${params}` : '/');
 });
 workspaceRoute.get('/queue', (c) => c.redirect('/?triage=needs_review'));
-workspaceRoute.get('/stats', (c) => c.redirect('/?range=week'));
-
-void DEFAULT_TIME_RANGE;
+workspaceRoute.get('/stats', (c) => c.redirect('/'));

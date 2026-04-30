@@ -118,7 +118,7 @@ describe('stats — service & route', () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('data-testid="kpi-strip"');
-    expect(html).toContain('data-testid="kpi-automation-rate"');
+    expect(html).toContain('data-testid="kpi-response-rate"');
     expect(html).toContain('data-testid="kpi-auto-sent"');
     expect(html).toContain('data-testid="kpi-needs-review"');
     expect(html).toContain('50%'); // 1 auto-sent of 2 processed

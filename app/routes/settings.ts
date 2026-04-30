@@ -1,16 +1,10 @@
 import { count, eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
+import { config as appConfig } from '../config.js';
 import { getDb } from '../db/client.js';
 import { leads } from '../db/schema.js';
 import { authMiddleware, csrfMiddleware, type AuthVariables } from '../middleware/auth.js';
-import {
-  createFaq,
-  deleteFaq,
-  FaqValidationError,
-  listFaqs,
-  searchFaqs,
-  updateFaq,
-} from '../services/faq-admin.service.js';
+import { getFaqMarkdown, setFaqMarkdown } from '../services/faq.service.js';
 import {
   getAiSettings,
   getBusinessRules,
@@ -49,21 +43,20 @@ function readFlash(c: Context<{ Variables: AuthVariables }>): { kind: 'success' 
 
 function renderPage(
   c: Context<{ Variables: AuthVariables }>,
-  search: string | null,
   flash: { kind: 'success' | 'error'; text: string } | null = null,
 ) {
   const db = getDb();
   const businessRules = getBusinessRules({ db });
   const ai = getAiSettings({ db });
-  const faqs = search && search.trim().length > 0 ? searchFaqs(search, { db }) : listFaqs({ db });
+  const faqMarkdown = getFaqMarkdown({ db });
   const csrfToken = c.get('csrfToken');
   const user = c.get('user');
   const reviewCount = getReviewQueueCount();
   const body = settingsPage({
     businessRules,
     ai,
-    faqs,
-    searchQuery: search ?? '',
+    faqMarkdown,
+    agentMailAddress: appConfig.AGENT_MAIL_ADDRESS,
     csrfToken,
     flash: flash ?? readFlash(c),
   });
@@ -74,16 +67,13 @@ function renderPage(
       reviewQueueCount: reviewCount,
       userDisplayName: user?.displayName ?? null,
       csrfToken,
-      showTourButton: false,
+      showTourButton: true,
       showSimulateButton: false,
     }),
   );
 }
 
-settingsRoute.get('/settings', (c) => {
-  const url = new URL(c.req.url);
-  return renderPage(c, url.searchParams.get('q'));
-});
+settingsRoute.get('/settings', (c) => renderPage(c));
 
 function redirectWith(c: Context, hash: string, kind: 'success' | 'error', text: string) {
   const params = new URLSearchParams({ flash: kind, msg: text });
@@ -92,21 +82,17 @@ function redirectWith(c: Context, hash: string, kind: 'success' | 'error', text:
 
 settingsRoute.post('/settings/business-rules', async (c) => {
   const body = (await c.req.parseBody()) as Record<string, unknown>;
-  const oakEnabled = body['oak_enabled'] === '1' || body['oak_enabled'] === 'on';
-  const oakStart = Number.parseInt(String(body['oak_start_month'] ?? '4'), 10);
-  const oakEnd = Number.parseInt(String(body['oak_end_month'] ?? '10'), 10);
-  const oakMessage = typeof body['oak_message'] === 'string' ? (body['oak_message'] as string) : '';
   const escalationKeywords = parseCommaList(typeof body['escalation_keywords'] === 'string' ? (body['escalation_keywords'] as string) : '');
   const zipPrefixes = parseCommaList(typeof body['zip_prefixes'] === 'string' ? (body['zip_prefixes'] as string) : '');
   const description = typeof body['service_area_description'] === 'string' ? (body['service_area_description'] as string) : '';
 
+  // Per Zaki: oak season ceases to be a configurable rule. We still persist
+  // a stub object so the BusinessRules shape stays consistent for any
+  // service that reads `oakSeason` — but the toggle is forced off and the
+  // months stay at defaults.
+  const existing = getBusinessRules();
   const next: BusinessRules = {
-    oakSeason: {
-      enabled: oakEnabled,
-      startMonth: oakStart,
-      endMonth: oakEnd,
-      message: oakMessage,
-    },
+    oakSeason: { ...existing.oakSeason, enabled: false },
     escalationKeywords,
     serviceArea: {
       zipPrefixes,
@@ -130,48 +116,12 @@ settingsRoute.post('/settings/ai', async (c) => {
   return redirectWith(c, '#ai-settings', 'success', 'AI settings saved.');
 });
 
-function readFaqInput(body: Record<string, unknown>) {
-  return {
-    category: typeof body['category'] === 'string' ? (body['category'] as string) : '',
-    question: typeof body['question'] === 'string' ? (body['question'] as string) : '',
-    answer: typeof body['answer'] === 'string' ? (body['answer'] as string) : '',
-    keywords: typeof body['keywords'] === 'string' ? (body['keywords'] as string) : '',
-    priority: Number(body['priority'] ?? 0),
-    active: body['active'] === '1' || body['active'] === 'on',
-  };
-}
-
-settingsRoute.post('/settings/faqs', async (c) => {
+settingsRoute.post('/settings/faq', async (c) => {
   const body = (await c.req.parseBody()) as Record<string, unknown>;
-  try {
-    createFaq(readFaqInput(body));
-  } catch (err) {
-    if (err instanceof FaqValidationError) {
-      return redirectWith(c, '#faq-knowledge', 'error', err.message);
-    }
-    throw err;
+  const md = typeof body['faq_markdown'] === 'string' ? (body['faq_markdown'] as string) : '';
+  if (md.length > 100_000) {
+    return redirectWith(c, '#faq-knowledge', 'error', 'FAQ content is too large (>100k chars).');
   }
-  return redirectWith(c, '#faq-knowledge', 'success', 'FAQ entry created.');
-});
-
-settingsRoute.post('/settings/faqs/:id', async (c) => {
-  const id = c.req.param('id');
-  const body = (await c.req.parseBody()) as Record<string, unknown>;
-  try {
-    const updated = updateFaq(id, readFaqInput(body));
-    if (!updated) return redirectWith(c, '#faq-knowledge', 'error', 'FAQ entry not found.');
-  } catch (err) {
-    if (err instanceof FaqValidationError) {
-      return redirectWith(c, '#faq-knowledge', 'error', err.message);
-    }
-    throw err;
-  }
-  return redirectWith(c, '#faq-knowledge', 'success', 'FAQ entry updated.');
-});
-
-settingsRoute.post('/settings/faqs/:id/delete', (c) => {
-  const id = c.req.param('id');
-  const ok = deleteFaq(id);
-  if (!ok) return redirectWith(c, '#faq-knowledge', 'error', 'FAQ entry not found.');
-  return redirectWith(c, '#faq-knowledge', 'success', 'FAQ entry deleted.');
+  setFaqMarkdown(md);
+  return redirectWith(c, '#faq-knowledge', 'success', 'FAQ saved.');
 });

@@ -1,0 +1,122 @@
+Zaki: Juan - Prototype discussion (Chad/Robert)
+mié, 29 abr 2026
+
+0:00 - Zaki Mahomed
+I am going to give you some feedback on this. A few things. We're gonna talk about this tour. I think this tour is not a good, it's not a good way. It's good for a SaaS application. It's not good for what you're trying to do with this agent over here. But besides that, my problem is this guy. This unit sucks. What is the most important thing in this unit?
+
+0:25 - Juan Camilo Zapata Velez
+Status could be. Okay, one.
+
+0:28 - Zaki Mahomed
+this like what kind of job it is right yeah and then maybe this the message right and then what's less important like the person's name because like they never have an image or a score um I don't know who they are maybe the address is important and the zip code so that's important too so I feel like the way I would have structured this would have been something like this you know like a name, time and zip code, like address, like this Cleveland 44111. Then I'd give it a flag and it only has certain number of flags, right? So that's one. I'd have a source. I'd probably go like, this is the source. The source is, you know, Google or LSA or a website form. There's only three sources, right? Website form, Google, LSA, and the third one, right? Answerforce, yeah, there we go. So I put that over here, I put the logo over here too, it's Google, I put the G, I put the website, I put a W, for Answerforce, I put their logo, so it's like branded, it looks like it's from that element, I can recognize it. I like your filters are good. And then you can have a confidence score, but that's less important, right? Like unless it's under a certain amount, So if it's like green, maybe you have certain element that's green. If it's red, it's red. If it's like, this element is good. This element here can be red, yellow, green, right? That's your status right there. So you don't have to like have a separate element for it. Here is the main job. I would say, you know, what's the main extraction, which is like here, trimming. I don't have to put it. I don't think you put it in this thing. You, maybe you have it here, like, as like, like a main bill item, right? Hedges, whatever you pull out. You have a phone number, you have a button for phone. If email exists, you have a button for email. If no email exists, you have a button. Whatever button you have, you have a button, right? And that opens up the phone, opens up the email, whatever they link it to. If it's an answer force, it should open up answer force in a new window. If it's a phone, it should just call, like tell, like a link. If it's an email, it should open up the email or the word cell form. Cause really it's not an email, it's a word cell form. So you have to like open up the email with that email address or whatever, right? How are we responding back? And then you have all this space available and that's your message, dude, right? And then, uh, I think maybe color, you just have two colors, green, yellow. What's a red?
+
+3:13 - Juan Camilo Zapata Velez
+I checked the website of them and it was actually red.
+
+3:21 - Zaki Mahomed
+Like either you were able to find all the information and do something or you weren't.
+
+3:26 - Zaki Mahomed
+I did.
+
+3:30 - Juan Camilo Zapata Velez
+I found everything I needed.
+
+3:34 - Zaki Mahomed
+What I mean is you either have like the status is what you did with it, right? Either you found everything that you needed it and you auto responded in which case is green no action needed right it's already handled right or you got that message extracted some things but now you couldn't do anything with it right and so they have to do something manual right okay right so it's either yellow it's not red it's yellow or it's green that's the only two element colors you have yellow or green There's no ready. What is ready? What is flat? It's either yellow or a green. You have too many states. And by the way, this also makes this crappy, right? Because you don't need so many. You need like total leads last 24 hours and whatever you have over here, total auto sent, total needs review. You don't have this. You have this rate of automation and then you have time and this should be like under, like this will be the same basically. Right so this should be response rate right how many you respond to and that you responded to already right and that climbs so that's that's you know you have one less thing I actually think this okay we'll stop there anything else that you want to talk about let's talk about I want to talk about this element up here and I want to talk about this over here but before we do that anything else you want to talk about from the feedback already this is clear so uh flex has to be and the ones are the same, pretty much. I think so. Now this element over here, and you don't need this because this is a repeat. You already have it so many places. You have it here, you have it here. Like really your first toggle here should be needs review. Like your biggest button here is needs review. You can then toggle into that and see. Maybe your default is needs review and then the auto is here and then it's all, or you can just see all. I think all is good and then you can tag toggle it to needs review toggle into auto sent But really there's two auto sent and needs review and then there's all Let's talk about This I hate this. I hate everything about this This whole thing sucks This whole element sucks How you deal with this I think you should really look at the, okay, look, there's only two elements and there's three kinds of messages. So it's either auto or needs review, two, statuses, and then there's three kinds of messages, right? Website, Vercel, sorry, website, Vercel, answer force, answer messaging, and Google LSA ads. Maybe we add a fourth later, it's okay. So there's only going to be the six kinds of variations of the screen, basically, right? And you have to think that through. The main variation is, does it need work? Has it already sent it out? Right? If it sent it out, it's not currently, exactly. You don't need to save extracted data. What's that? It's already, like, there's a summary of what came in. Here's a message we extracted. Here's the data we extracted. And here's what we sent out. This is too much, like, you don't have to extract information like this right you can extract out you know in a much more tighter fashion your lead summary like you already got elements from here you're not making new elements over here like here you have google lsa like this here you have google lsa like this it's not great doesn't make sense like whatever I talked about over here has to fit over here too and you've got it over here too like why is it repeated like do you want to repeat it like do you need the millisecond like when you have received one hour ago over here like you haven't thought this through and so this whole thing sucks this response is not looks editable it's already sent but it looks editable um and then what is this yeah like what you sent I guess yeah you so this should be the same you you send an email then you send this text message and you log that text message what's It doesn't make sense. So this whole thing sucks. Like it needs a lot of work. And then there's the version of this, which is like editable. So you can edit and send the message in email or text message by hitting a button, right? That's the edited version where you have like, Oh, I have this information, but this is missing. And you highlight what's missing. So I don't have a phone number. I don't have an email address, right? If you have at least an email address or a phone number, you can make it actionable. But if you have nothing, then it goes to this queue or if you can't put, What information is necessary to send? What is necessary over here to send versus what's not? You need to have at least a phone number and email. You need to have a CIDI zip code. I don't think you need a confidence score, frankly, that's just on the backend. That's what you're using on the backend to see if it should be auto or not. And then you have a message on what they want to do. If they have those things, then you can set up an email or a message or both, depending on what you have. You will always have at least an email or a phone. Because if it's on the website, they'll give you an email or a phone, or both, in which case you can do both. If it's coming in an answer force, they will give you the phone number it came from, right? And if it came from Google LSA, they will give you a phone number, right, or an email, like something in the Captcha CTA. So you always have one of those. What you really need to do is be able to extract out the city, location, and the message, and craft a response.
+
+9:20 - Juan Camilo Zapata Velez
+Right. Yeah, makes a lot of sense.
+
+9:23 - Zaki Mahomed
+Now, here's the other thing. This response has to be, it's coming off a prompt. That prompt should be in settings. Can you show me settings? Yeah. Yeah, okay, good. Can you go up?
+
+9:40 - Orador no identificado
+Yeah.
+
+9:40 - Zaki Mahomed
+To, not go all the way up. Business rules, okay. Does not need to exist. You got a here's another issue that happened. You had a this can go away. You don't need this. There's no restriction over here. All right, basically, you got a really bad version of the PRD that was like, not that had like some dumb ideas in it. This is okay. Like, so basically if this word is detected, then it will always be manually reviewed right and so you can get rid of some of these you don't need all of them but yeah it's good service area okay so these are only zip codes we're going to take leads from this needs to be a five digit zip code not a three digit oh first three digits okay cool okay sounds good good um and then here's description of area okay sounds good these are good rules can you tell me the air prom stuff this probably should be Google Flash 3. Maximum rent should be 4 to 500 tokens. Temperature is good. Here's the rules. Here's the thing. Amazing. What's FAQ?
+
+10:49 - Juan Camilo Zapata Velez
+You can create maybe.
+
+10:55 - Zaki Mahomed
+I think you should just have this as a mockdown file. Copy and paste your FAQs in this format. Don't do it this way. This is like Because you convert this into a markdown file.
+
+11:08 - Juan Camilo Zapata Velez
+Like to keep it simple, basically.
+
+11:11 - Zaki Mahomed
+Yeah. Keep it very simple. Like I don't want to like add and subtract. It's like literally question, answer, question, answer, question, answer, nothing else. Right. Like no, no category, no priority, just question, answer, question, answer, no, no keywords, just literally copy and paste. So basically we'll take the prompt and the markdown file. There's this question answer FAQs and send that to the prompt along with the message, right? So it can just be like very, you know, you can maintain this as question answers. Okay, good. Can you go back to the home?
+
+11:43 - Orador no identificado
+Yes.
+
+11:49 - Zaki Mahomed
+I don't like that it's new pages. It should be a single page. It's very like, not like an agent. It reminds me of a SaaS app. That's another thing that I think you should like consider. Like why is it like, Like you're using Hono on the backend?
+
+12:03 - Orador no identificado
+Yeah, Hono.
+
+12:05 - Zaki Mahomed
+Yeah, you should be able to make this into like, you shouldn't need so many reloads. You can make it into like a simple one. I don't think it needs to be a single page app, but it can be. There's no real, there's only one page, right? Yeah, basically it is. Like settings is a separate page. Okay. And I guess that's my feedback for you also. Like settings doesn't have to be its own. It's a single page app. Make it smooth. Get the branding right. Like this is not, their look make it nicer like make it more interesting now the main thing is your prototype should have a preview sorry your prototype should have a walkthrough which you've done but not a good job on first of all these two buttons should be the same button okay you don't need to simulate leads you already have leads in here that you simulated when you first come to this link you should see a screen which just goes like here's our build you know Sagan look Premier T logo, here's what we're building for you. And that's the first step. That's what Talha's, the prototype I sent to you is built by a developer at a network, a really senior developer called Talha. I want you to follow that prototype guidance. It's very good. The first screen is like, here's our building for you. His landing page is actually quite busy. I don't like it. I told him to change it. So he'll change it. But like literally like the most important thing is here's a building for you. And now I'm going to walk you through it. Then you start, you come here, you can always end the tour, right? And you can click a button to start the tour again. Restart the tour. It's fine. But it shows you what's the most important thing. It says this is your dashboard. New incoming whatever messages come here. Show them this. Right. Then next. Leads that need manual review are marked by here. Be filtered through here right then let's open one when you open one here's how you can edit and send the message out right right and then and then leads that are automatically sent where we can find all this information here's what's necessary to send a message out here's the fields and then leads where we can find this information they're auto sent and here's where they are and here's what they look like right these are all these don't need any responses they're just automatically sent right then in settings you can see um how to you know the prompt how you impact this right the rules around this and explain that right very quickly like here's the business rules here's the ai rules here's the faqs right and here's how they work go back to home page then final step and that's where it ends if I here's what I need you to do first review this and make sure it works like you expect it to work second before I can finish the app prototype second here I need from you this and this and this to complete this prototype please send that to me along with your feedback so I can finish it right don't make them give you the information there ask them to email us they will they know what to do but what you need over here is what you need some way to to connect to Wordself form, so you should know what that is. You need some way to hook into Google LSA, so you should know what that is. Do you know how to do that?
+
+15:27 - Juan Camilo Zapata Velez
+No, not really.
+
+15:28 - Zaki Mahomed
+You're gonna research that and say, I need this from you, I need this from you, I need this from you. So like, did you see what he had? I need you to go to Notion, create a key like this, and then bring the key and give me the key and the board, right? You saw that button, right? In the prototype I shared. That's what I need from you, but what you're gonna need is a few things. You're gonna need to know, you need to get, like, you need a feed of Google LSA. What's the best way? I don't know, ask Claude, he'll tell you what the best way to get that is. I'm sure there's like a webhook or somewhere. So you need to go like, I need you to give me the API key for your Google LSA account or set up a new service account and then give me the API key so I can pull, right? Whatever that is. For Vercel, that's probably an easier way. You can always subscribe to it. I need you to forward your website form emails to this email address I'm giving you. Same thing, actually you can run the whole thing over email. So you can basically set up an email address and I'll show you how. There's an app called Agent Mail that we use. It'll give you an email. So what you can do is instead you can say, hey, set up your Google LSA email to forward to this address. So you can set up a Google filter, a Gmail filter. Whenever you get an email from Google LSA about a new lead, it goes straight to this. Actually I'm not sure if it's an email or a dashboard. I think in Google's case it might be like you can see the leads coming in in real time. For website form and answer force, he gets an email. So you can forward those emails in. If he comes to you and he says, I don't have an API key for Google LSA, then you can go to email for all three. But what you'll do is you'll generate an email using agent mail, and you will tell him that, hey, this is your email address. It'll be in settings. Forward your emails to this address. And that address can be like premier3-h8. Pts-agent at agent mail dot whatever, right? That's an agent mail is what I use for like, when I need to give the agent an email address, right? So, you know, whenever, whatever they get, like they get an email from AnswerForce website submission on WordCell, they forward that automatically, like they just build a forward. So your thing has to say, okay, I need you to do this. I need you to set up a forward. So every time you get a new website submission or AnswerForce email, you forward this email address. Right? That's one. Two, I need you to give me your API key for Google LSA. How do I integrate with Google LSA? Let's find out. How do I integrate with Google LSA leads?
+
+17:48 - Juan Camilo Zapata Velez
+Capture in real time. All right, it was with the LSA email.
+
+18:01 - Zaki Mahomed
+I'm just looking up, I'm just looking up how to do LSA. I know how to do website and answer for us because you can just do an email. I'm just trying to see if there's a way to do Google ads.
+
+18:34 - Orador no identificado
+Okay, here.
+
+18:58 - Zaki Mahomed
+So Google doesn't share an API, but this is the research you have to do, right? And so they don't expose a self-service API for LSA leads to advertisers, but you can pull it through the Google ads API. Now to do this, you're going to need a Google ads API developer token. Maybe not. I'm gonna go to message too. Yeah, I think the email thing can work for Google LSA too. But you also can use N8N.
+
+19:49 - Orador no identificado
+Correct.
+
+19:50 - Zaki Mahomed
+So you can use a connector with N8N.
+
+20:00 - Juan Camilo Zapata Velez
+Like for grabbing the information for the leads of Google LSA and dump it to...
+
+20:08 - Zaki Mahomed
+somewhere into your app directly actually right yeah so they do have a na10 node for this too so we have na10 as well so you can do one of two ways you can do either the na10 or you can do the email um I personally think the email would be the fastest because you're already doing it for website form and answerforce so like we'll do that that way you can just say hey forward all lsa emails answerforce emails and website emails to this email address and that's the email address setup that's a change you have to make you have to say of that email address too, by the way. So you can ask Sara for agent mail access.
+
+20:41 - Juan Camilo Zapata Velez
+All right, sounds good.
+
+20:43 - Zaki Mahomed
+Sounds good? Yes. All right, I will let Sara know to give you agent mail access. Are you feeling good about finishing this prototype and building it actually, like actually finishing it?
+
+20:53 - Juan Camilo Zapata Velez
+Yeah, absolutely. It's just because it's something very new, this type of working, let's say.
+
+21:02 - Zaki Mahomed
+I'm thinking you should ask when you you know you say here's what I need you to finish the prototype I need you to like set up the forwarding and also like forward me your just do it now so they'll start forwarding just make sure you get every time a form comes it'll come to you now on that agent mail and so you have enough types of real stuff coming right so you can test it out with real data so you just make sure you're getting and saving the stuff that you're getting that mail address right and then I'm going to ask you to finish this out so what I need you to do is okay step two if you understand everything finish the prototype and send it back to the channel I can review it one last time if everything looks good we're going to send exactly this link to the customer they can review it also um and then we can launch like they if they set up the email forward then you're getting examples coming in on that email, we can go build the backend and launch.
+
+22:03 - Juan Camilo Zapata Velez
+Oh, awesome. Yes.
+
+22:04 - Zaki Mahomed
+All right. All right. So then our goal is to finish this tomorrow or today?
+
+22:14 - Juan Camilo Zapata Velez
+They are already signed. Yeah, it can be done by today. Could you send me the captions or the transcript of the meeting? It can be helpful.
+
+22:26 - Zaki Mahomed
+This isn't this your note taker Read.AI.
+
+22:30 - Zaki Mahomed
+I think that's you.
+
+22:33 - Juan Camilo Zapata Velez
+But no, it's not me. I

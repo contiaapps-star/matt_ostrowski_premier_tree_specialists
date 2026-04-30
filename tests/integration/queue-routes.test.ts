@@ -7,7 +7,11 @@ describe('Workspace — needs_review triage tab', () => {
   beforeEach(() => setupFreshDb());
   afterEach(() => teardownDb());
 
-  it('renders only awaiting_review leads under triage=needs_review', async () => {
+  it('renders awaiting_review + flagged + failed leads under triage=needs_review', async () => {
+    // After Zaki's review the "Needs Review" tab sweeps every status that
+    // hasn't been auto/manually sent — awaiting_review, manually_flagged,
+    // failed, plus mid-pipeline states. Only the two "sent" statuses are
+    // excluded.
     const db = getDb();
     insertLead(db, { customerName: 'Awaiting A', status: 'awaiting_review' });
     insertLead(db, { customerName: 'Awaiting B', status: 'awaiting_review' });
@@ -22,21 +26,23 @@ describe('Workspace — needs_review triage tab', () => {
     expect(html).toContain('data-testid="workspace-page"');
     expect(html).toContain('Awaiting A');
     expect(html).toContain('Awaiting B');
-    expect(html).not.toContain('Flagged C');
+    expect(html).toContain('Flagged C');
     expect(html).not.toContain('Sent D');
     expect(html).not.toContain('Sent E');
   });
 
-  it('renders flagged leads under triage=flagged', async () => {
+  it('triage=auto excludes everything that is not auto/manually sent', async () => {
     const db = getDb();
     insertLead(db, { status: 'awaiting_review', customerName: 'Pending One' });
+    insertLead(db, { status: 'auto_sent', customerName: 'Auto One' });
     insertLead(db, { status: 'manually_flagged', customerName: 'Flagged One' });
 
     const app = createApp();
-    const res = await app.request('/?triage=flagged');
+    const res = await app.request('/?triage=auto');
     const html = await res.text();
-    expect(html).toContain('Flagged One');
+    expect(html).toContain('Auto One');
     expect(html).not.toContain('Pending One');
+    expect(html).not.toContain('Flagged One');
   });
 
   it('shows empty state when nothing is in queue', async () => {
@@ -66,11 +72,13 @@ describe('Legacy /stats route', () => {
   beforeEach(() => setupFreshDb());
   afterEach(() => teardownDb());
 
-  it('redirects to /?range=week', async () => {
+  it('redirects to /', async () => {
+    // Time-range filter was removed per Zaki's review — workspace is always
+    // a 24h window, so /stats just bounces back to the inbox.
     const app = createApp();
     const res = await app.request('/stats');
     expect([301, 302, 307, 308]).toContain(res.status);
-    expect(res.headers.get('location')).toBe('/?range=week');
+    expect(res.headers.get('location')).toBe('/');
   });
 });
 

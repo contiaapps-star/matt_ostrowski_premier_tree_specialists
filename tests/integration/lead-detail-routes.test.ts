@@ -27,6 +27,22 @@ describe('GET /leads/:id', () => {
     expect(html).toContain('data-testid="lead-detail-page"');
     expect(html).toContain('data-testid="audit-trail"');
     expect(html).toContain('data-testid="original-payload"');
+    // Auto-sent leads render the read-only contact section, not the editable
+    // extracted-data form (per Zaki's redesign).
+    expect(html).toContain('data-testid="contact-readonly"');
+  });
+
+  it('renders the editable extracted-data form when the lead needs review', async () => {
+    const db = getDb();
+    const id = insertLead(db, {
+      customerName: 'Pending Pete',
+      status: 'awaiting_review',
+      responseText: 'Draft hi.',
+    });
+    const app = createApp();
+    const res = await app.request(`/leads/${id}`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
     expect(html).toContain('data-testid="extracted-data-card"');
   });
 

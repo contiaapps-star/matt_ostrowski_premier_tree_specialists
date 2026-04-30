@@ -13,28 +13,16 @@ export interface BaseLayoutOptions {
   flashMessage?: { kind: 'success' | 'error' | 'info'; text: string } | null;
   csrfToken?: string;
   showTourButton?: boolean;
+  /** @deprecated kept for callsite back-compat — Simulate Lead removed per Zaki's review. */
   showSimulateButton?: boolean;
 }
 
-function reviewBadgeInner(count: number | undefined) {
-  if (!count || count <= 0) return html``;
-  return html`<a
-      href="/?triage=needs_review"
-      class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 hover:bg-amber-200"
-      title="Leads awaiting review"
-      data-testid="header-review-count"
-    >
-      <span class="inline-block h-2 w-2 rounded-full bg-amber-500"></span>
-      ${count} need${count === 1 ? 's' : ''} review
-    </a>`;
-}
-
-function reviewBadge(count: number | undefined) {
-  return html`<span id="header-review-region" data-testid="header-review-region">${reviewBadgeInner(count)}</span>`;
-}
-
-export function reviewBadgeOob(count: number) {
-  return html`<span id="header-review-region" hx-swap-oob="true" data-testid="header-review-region">${reviewBadgeInner(count)}</span>`;
+// The "X need review" badge was removed from the header at the user's request.
+// `reviewBadgeOob` is kept as a no-op so existing OOB call sites in leads.ts
+// don't have to be edited; the rendered span has no matching target in the
+// DOM, so htmx silently drops the swap.
+export function reviewBadgeOob(_count: number) {
+  return html`<span id="header-review-region" hx-swap-oob="true"></span>`;
 }
 
 function flashBanner(flash: BaseLayoutOptions['flashMessage']) {
@@ -69,13 +57,15 @@ export function baseLayout({
   title,
   body,
   bodyClass,
-  reviewQueueCount,
+  reviewQueueCount: _reviewQueueCount,
   userDisplayName,
   flashMessage,
   csrfToken,
   showTourButton = true,
-  showSimulateButton = true,
+  showSimulateButton: _showSimulateButton = true,
 }: BaseLayoutOptions) {
+  void _showSimulateButton;
+  void _reviewQueueCount;
   const userName = userDisplayName ?? 'matt@premiertreesllc.com';
   const csrfMeta = csrfToken
     ? raw(`<meta name="csrf-token" content="${csrfToken.replace(/"/g, '&quot;')}" />`)
@@ -84,28 +74,12 @@ export function baseLayout({
     ? html`<button
         type="button"
         id="start-tour-btn"
-        class="hidden md:inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        class="inline-flex items-center gap-1 rounded-full bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
         data-testid="start-tour-btn"
         data-tour="start-tour"
       >
         <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm.5 4a.75.75 0 00-1.5 0v3.25H6.5a.75.75 0 000 1.5h2.5V14a.75.75 0 001.5 0v-3.25H13a.75.75 0 000-1.5h-2.5V6z"/></svg>
         Take a tour
-      </button>`
-    : html``;
-  const simulateBtn = showSimulateButton && csrfToken
-    ? html`<button
-        type="button"
-        id="simulate-lead-btn"
-        class="inline-flex items-center gap-1 rounded-full bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
-        hx-post="/api/simulate-lead"
-        hx-headers='{"X-CSRF-Token":"${csrfToken.replace(/"/g, '&quot;')}"}'
-        hx-target="#leads-list-region"
-        hx-swap="afterbegin"
-        data-testid="simulate-lead-btn"
-        data-tour="simulate"
-      >
-        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.78 1.625l-7 9A1 1 0 018 17v-5H4a1 1 0 01-.78-1.625l7-9a1 1 0 011.08-.33z"/></svg>
-        Simulate Lead
       </button>`
     : html``;
   return html`<!DOCTYPE html>
@@ -119,7 +93,9 @@ export function baseLayout({
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css" />
-  <link rel="icon" href="/public/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/public/tour.css" />
+  <link rel="icon" href="/public/images/premier-tree-logo.png" type="image/png" />
+  <link rel="apple-touch-icon" href="/public/images/premier-tree-logo.png" />
   ${csrfMeta}
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.js.iife.js" defer></script>
@@ -136,11 +112,15 @@ export function baseLayout({
 <body class="${bodyClass ?? 'bg-slate-50 text-slate-900 antialiased font-sans'}" hx-indicator="#htmx-spinner">
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
     <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-4">
-      <a href="/" class="flex items-center gap-2.5" aria-label="Premier Tree Specialists workspace home">
-        <img src="/public/logo.svg" alt="" aria-hidden="true" class="h-9 w-9" />
+      <a href="/" class="flex items-center gap-3" aria-label="Premier Tree Specialists workspace home">
+        <img
+          src="/public/images/premier-tree-logo.png"
+          alt="Premier Tree Specialists"
+          class="h-11 w-11 rounded-full ring-1 ring-slate-200 bg-white object-contain"
+        />
         <span class="flex flex-col leading-tight">
           <span class="text-sm font-bold text-brand-700 tracking-tight">Premier Tree Specialists</span>
-          <span class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Lead Intake Workspace</span>
+          <span class="text-[10px] font-medium uppercase tracking-wider text-slate-500">Lead Intake · Built by Sagan</span>
         </span>
       </a>
       <div class="flex items-center gap-2">
@@ -148,9 +128,7 @@ export function baseLayout({
           <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 016 6c0 4.5-6 10-6 10S4 12.5 4 8a6 6 0 016-6zm0 8a2 2 0 100-4 2 2 0 000 4z"/></svg>
           Cleveland · Columbus
         </span> -->
-        ${reviewBadge(reviewQueueCount)}
         ${tourBtn}
-        ${simulateBtn}
         <a
           href="/settings"
           class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"

@@ -188,7 +188,7 @@ leadsRoute.patch('/leads/:id/extracted-data', async (c) => {
   );
 });
 
-leadsRoute.post('/leads/:id/approve', (c) => {
+leadsRoute.post('/leads/:id/approve', async (c) => {
   const id = c.req.param('id');
   const lead = loadLead(id);
   if (!lead) return c.json({ error: 'lead_not_found' }, 404);
@@ -196,11 +196,18 @@ leadsRoute.post('/leads/:id/approve', (c) => {
     return c.json({ error: 'invalid_status', status: lead.status }, 409);
   }
   const user: AuthenticatedUser = c.get('user');
+  // Per the redesign: the textarea content is the source of truth on approve.
+  // We keep working without it (fallback to the stored draft) so the test
+  // suite that POSTs `/approve` without a body still works.
+  const formBody = (await c.req.parseBody().catch(() => ({}))) as Record<string, unknown>;
+  const submittedText = typeof formBody.response_text === 'string' ? formBody.response_text.trim() : '';
+  const finalText = submittedText.length > 0 ? submittedText : lead.responseText;
   const db = getDb();
   const now = new Date();
   db.update(leads)
     .set({
       status: 'manually_sent',
+      responseText: finalText,
       responseSentAt: now,
       responseSentBy: user.email,
       updatedAt: now,
@@ -212,6 +219,7 @@ leadsRoute.post('/leads/:id/approve', (c) => {
   recordAudit(id, user.email, `approved_by_${userKey}`, {
     by: user.email,
     previous_status: lead.status,
+    edited_inline: submittedText.length > 0 && submittedText !== lead.responseText,
   });
 
   const updated = loadLead(id) as Lead;

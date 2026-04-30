@@ -22,8 +22,11 @@ describe('GET / — workspace SPA shell', () => {
       customerName: 'Barbara Wells',
     });
 
+    // Default triage is now needs_review, so to assert that both lead types
+    // render at all we hit triage=all (auto_sent is hidden under the default
+    // tab).
     const app = createApp();
-    const res = await app.request('/');
+    const res = await app.request('/?triage=all');
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type') ?? '').toMatch(/text\/html/);
     const html = await res.text();

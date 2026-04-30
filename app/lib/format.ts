@@ -100,3 +100,19 @@ export function formatScopeCategory(scope: string | null | undefined): string {
   if (!scope) return '—';
   return SCOPE_LABELS[scope] ?? scope;
 }
+
+const HANDLED_STATUSES = new Set(['auto_sent', 'manually_sent']);
+const IN_PROGRESS_STATUSES = new Set(['ingested', 'extracting', 'responding']);
+
+export function isHandled(status: string | null | undefined): boolean {
+  return typeof status === 'string' && HANDLED_STATUSES.has(status);
+}
+
+export function isInProgress(status: string | null | undefined): boolean {
+  return typeof status === 'string' && IN_PROGRESS_STATUSES.has(status);
+}
+
+export function isPending(status: string | null | undefined): boolean {
+  if (typeof status !== 'string') return false;
+  return !HANDLED_STATUSES.has(status) && !IN_PROGRESS_STATUSES.has(status);
+}

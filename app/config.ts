@@ -22,7 +22,7 @@ const ConfigSchema = z
     DATABASE_PATH: z.string().min(1).default('/data/leads.db'),
 
     OPENROUTER_API_KEY: z.string().optional().default(''),
-    OPENROUTER_MODEL: z.string().default('anthropic/claude-sonnet-4-6'),
+    OPENROUTER_MODEL: z.string().default('google/gemini-2.5-flash'),
     OPENROUTER_BASE_URL: z.string().url().default('https://openrouter.ai/api/v1'),
 
     CONFIDENCE_AUTO_SEND_THRESHOLD: z.coerce.number().min(0).max(1).default(0.8),
@@ -45,6 +45,11 @@ const ConfigSchema = z
     LSA_EMAIL_FROM: z.string().default('noreply@google-business.com'),
     ANSWERFORCE_EMAIL_FROM: z.string().default('notifications@answerforce.com'),
     EMAIL_POLL_INTERVAL_SECONDS: z.coerce.number().int().positive().default(60),
+
+    // Inbound forwarding alias (Agent Mail). Surfaced in /settings so the
+    // client knows where to forward LSA / website / AnswerForce emails. When
+    // empty we render a "Pending" placeholder.
+    AGENT_MAIL_ADDRESS: z.string().optional().default(''),
 
     WEBSITE_FORM_WEBHOOK_SECRET: z.string().optional().default(''),
 
