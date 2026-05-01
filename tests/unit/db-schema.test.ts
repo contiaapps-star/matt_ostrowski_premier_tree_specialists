@@ -17,6 +17,7 @@ const EXPECTED_TABLES = [
   'sessions',
   'zip_code_to_county',
   'app_settings',
+  'agent_mail_messages',
 ];
 
 const EXPECTED_INDEXES = [
@@ -36,6 +37,10 @@ const EXPECTED_INDEXES = [
   'sessions_expires_at_idx',
   'zip_code_to_county_county_idx',
   'zip_code_to_county_region_idx',
+  'agent_mail_messages_agentmail_message_id_unique',
+  'agent_mail_messages_received_at_idx',
+  'agent_mail_messages_parse_status_idx',
+  'agent_mail_messages_lead_id_idx',
 ];
 
 let sqlite: Database.Database;

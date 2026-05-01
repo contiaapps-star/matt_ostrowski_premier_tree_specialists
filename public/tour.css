@@ -122,3 +122,84 @@
 .pts-tour-popover .driver-popover-title:has(+ .driver-popover-description .pts-tour-hero) {
   display: none;
 }
+
+/* Final-step extras: address pill + checklist + CTA button. */
+.pts-tour-popover .pts-tour-address-pill {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pts-tour-popover .pts-tour-address-pill .pts-tour-address-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pts-tour-popover .pts-tour-address-pill code {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.875rem;
+  color: #14532d;
+  background: transparent;
+  word-break: break-all;
+}
+
+.pts-tour-popover .pts-tour-address-pending code {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.pts-tour-popover .pts-tour-checklist {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pts-tour-popover .pts-tour-checklist li {
+  font-size: 0.85rem;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pts-tour-popover .pts-tour-checklist .pts-tour-check {
+  font-size: 1rem;
+  color: #15803d;
+  width: 18px;
+  text-align: center;
+}
+
+.pts-tour-popover .pts-tour-cta-row {
+  margin-top: 14px;
+}
+
+.pts-tour-popover .pts-tour-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #15803d;
+  color: #fff;
+  border: 1px solid #15803d;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 7px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pts-tour-popover .pts-tour-cta:hover {
+  background: #166534;
+  border-color: #166534;
+}

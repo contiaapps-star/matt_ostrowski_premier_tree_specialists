@@ -74,25 +74,30 @@ function trimNullable(value: unknown): string | null {
 }
 
 interface ParsedExtractedData {
-  customerName: string | null;
-  customerPhoneE164: string | null;
-  customerEmail: string | null;
-  customerAddress: string | null;
-  customerCity: string | null;
-  customerZip: string | null;
+  customerName?: string | null;
+  customerPhoneE164?: string | null;
+  customerEmail?: string | null;
+  customerAddress?: string | null;
+  customerCity?: string | null;
+  customerZip?: string | null;
 }
 
+// Partial-tolerant: only includes fields that were present in the submitted
+// body. Empty string is preserved as `null` (clear-the-field), but a missing
+// key is left out entirely so the UPDATE leaves the existing value alone. This
+// is what lets the inline auto-save-on-blur send one field at a time.
 function parseExtractedFormBody(body: Record<string, unknown>): ParsedExtractedData {
-  const phoneRaw = trimNullable(body.customer_phone);
-  const phoneE164 = phoneRaw ? normalizeToE164(phoneRaw) : null;
-  return {
-    customerName: trimNullable(body.customer_name),
-    customerPhoneE164: phoneE164,
-    customerEmail: trimNullable(body.customer_email),
-    customerAddress: trimNullable(body.customer_address),
-    customerCity: trimNullable(body.customer_city),
-    customerZip: trimNullable(body.customer_zip),
-  };
+  const patch: ParsedExtractedData = {};
+  if ('customer_name' in body) patch.customerName = trimNullable(body.customer_name);
+  if ('customer_phone' in body) {
+    const phoneRaw = trimNullable(body.customer_phone);
+    patch.customerPhoneE164 = phoneRaw ? normalizeToE164(phoneRaw) : null;
+  }
+  if ('customer_email' in body) patch.customerEmail = trimNullable(body.customer_email);
+  if ('customer_address' in body) patch.customerAddress = trimNullable(body.customer_address);
+  if ('customer_city' in body) patch.customerCity = trimNullable(body.customer_city);
+  if ('customer_zip' in body) patch.customerZip = trimNullable(body.customer_zip);
+  return patch;
 }
 
 function recordAudit(leadId: string, actor: string, action: string, details: unknown): void {
@@ -148,32 +153,35 @@ leadsRoute.patch('/leads/:id/extracted-data', async (c) => {
   const user: AuthenticatedUser = c.get('user');
 
   const formBody = await c.req.parseBody();
-  const parsed = parseExtractedFormBody(formBody as Record<string, unknown>);
-
-  const zipLookup = parsed.customerZip ? lookupCounty(parsed.customerZip) : null;
-  const newCounty = zipLookup?.county ?? null;
-  const outOfArea = parsed.customerZip ? !zipLookup : lead.outOfServiceArea;
+  const patch = parseExtractedFormBody(formBody as Record<string, unknown>);
 
   const db = getDb();
   const now = new Date();
-  db.update(leads)
-    .set({
-      customerName: parsed.customerName,
-      customerPhoneE164: parsed.customerPhoneE164,
-      customerEmail: parsed.customerEmail,
-      customerAddress: parsed.customerAddress,
-      customerCity: parsed.customerCity,
-      customerZip: parsed.customerZip,
-      serviceAreaCounty: newCounty,
-      outOfServiceArea: outOfArea,
-      updatedAt: now,
-    })
-    .where(eq(leads.id, id))
-    .run();
+  const setData: Record<string, unknown> = { updatedAt: now };
+  if ('customerName' in patch) setData.customerName = patch.customerName;
+  if ('customerPhoneE164' in patch) setData.customerPhoneE164 = patch.customerPhoneE164;
+  if ('customerEmail' in patch) setData.customerEmail = patch.customerEmail;
+  if ('customerAddress' in patch) setData.customerAddress = patch.customerAddress;
+  if ('customerCity' in patch) setData.customerCity = patch.customerCity;
+
+  // Recalculate service area only when the zip itself was part of this patch.
+  // Otherwise we'd wipe the previously-derived county on every name/email edit.
+  let newCounty: string | null = lead.serviceAreaCounty;
+  let outOfArea: boolean = lead.outOfServiceArea;
+  if ('customerZip' in patch) {
+    setData.customerZip = patch.customerZip;
+    const zipLookup = patch.customerZip ? lookupCounty(patch.customerZip) : null;
+    newCounty = zipLookup?.county ?? null;
+    outOfArea = patch.customerZip ? !zipLookup : false;
+    setData.serviceAreaCounty = newCounty;
+    setData.outOfServiceArea = outOfArea;
+  }
+
+  db.update(leads).set(setData).where(eq(leads.id, id)).run();
 
   recordAudit(id, user.email, 'manually_edited_extracted_data', {
     by: user.email,
-    fields: parsed,
+    fields: patch,
     new_county: newCounty,
     out_of_service_area: outOfArea,
   });
@@ -184,7 +192,7 @@ leadsRoute.patch('/leads/:id/extracted-data', async (c) => {
   }
   const summaryOob = honoHtml`<div id="lead-summary-region" hx-swap-oob="true">${leadSummaryCard(updated)}</div>`;
   return c.html(
-    honoHtml`${extractedDataRegion(updated)}${summaryOob}${auditTrailOob(id)}${flashOob('Extracted data saved.', 'success')}`,
+    honoHtml`${extractedDataRegion(updated)}${summaryOob}${auditTrailOob(id)}${flashOob('Saved ✓', 'success')}`,
   );
 });
 

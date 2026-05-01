@@ -50,6 +50,14 @@ const ConfigSchema = z
     // client knows where to forward LSA / website / AnswerForce emails. When
     // empty we render a "Pending" placeholder.
     AGENT_MAIL_ADDRESS: z.string().optional().default(''),
+    AGENT_MAIL_API_KEY: z.string().optional().default(''),
+    AGENT_MAIL_USERNAME: z.string().default('premier3-pts-agent'),
+    AGENT_MAIL_DOMAIN: z.string().default('agentmail.to'),
+    AGENT_MAIL_DISPLAY_NAME: z.string().default('Premier Tree Specialists Agent'),
+    // Public base URL used to register the AgentMail webhook target. Required
+    // when AGENT_MAIL_API_KEY is set; otherwise the bootstrap skips webhook
+    // creation. Example: https://premier-tree-pts.up.railway.app
+    PUBLIC_BASE_URL: z.string().optional().default(''),
 
     WEBSITE_FORM_WEBHOOK_SECRET: z.string().optional().default(''),
 

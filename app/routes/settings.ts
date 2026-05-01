@@ -1,9 +1,9 @@
 import { count, eq } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
-import { config as appConfig } from '../config.js';
 import { getDb } from '../db/client.js';
 import { leads } from '../db/schema.js';
 import { authMiddleware, csrfMiddleware, type AuthVariables } from '../middleware/auth.js';
+import { resolveAgentMailAddress } from '../services/agentmail-bootstrap.service.js';
 import { getFaqMarkdown, setFaqMarkdown } from '../services/faq.service.js';
 import {
   getAiSettings,
@@ -56,7 +56,7 @@ function renderPage(
     businessRules,
     ai,
     faqMarkdown,
-    agentMailAddress: appConfig.AGENT_MAIL_ADDRESS,
+    agentMailAddress: resolveAgentMailAddress({ db }),
     csrfToken,
     flash: flash ?? readFlash(c),
   });

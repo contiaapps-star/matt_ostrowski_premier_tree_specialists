@@ -146,55 +146,104 @@ function missingFieldsBanner(lead: Lead) {
 }
 
 export function extractedDataCard(lead: Lead) {
-  const inputCls = 'rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm focus:border-brand-600 focus:ring-1 focus:ring-brand-600 focus:outline-none';
+  const inputCls = 'pts-autosave-input rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm focus:border-brand-600 focus:ring-1 focus:ring-brand-600 focus:outline-none';
+  // Each <input> auto-saves on blur via hx-patch with hx-include="this" — the
+  // input only sends its own field. The route handler is partial-update
+  // tolerant so unrelated fields keep their values. The "Saved ✓" pulse is
+  // driven by a CSS animation on the swapped-in element (see public/styles.css).
+  const patchUrl = `/leads/${lead.id}/extracted-data`;
+  const phoneDisplay = formatPhone(lead.customerPhoneE164) || lead.customerPhoneE164 || '';
   return html`<div class="space-y-2" data-testid="extracted-data-card">
     <div class="flex items-center justify-between">
-      <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Contact <span class="text-slate-400 font-normal normal-case">(edit if needed)</span></h3>
+      <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Contact <span class="text-slate-400 font-normal normal-case">(edits save automatically)</span></h3>
     </div>
     ${missingFieldsBanner(lead)}
-    <form
-      class="grid grid-cols-1 gap-2 sm:grid-cols-2"
-      data-testid="extracted-data-form"
-      hx-patch="/leads/${lead.id}/extracted-data"
-      hx-target="#extracted-data-region"
-      hx-swap="outerHTML"
-      hx-encoding="application/x-www-form-urlencoded"
-    >
+    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2" data-testid="extracted-data-form">
       <label class="flex flex-col gap-0.5">
         <span class="text-[11px] text-slate-500">Name</span>
-        <input class="${inputCls}" name="customer_name" value="${lead.customerName ?? ''}" />
+        <input
+          class="${inputCls}"
+          name="customer_name"
+          value="${lead.customerName ?? ''}"
+          hx-patch="${patchUrl}"
+          hx-trigger="blur changed"
+          hx-include="this"
+          hx-target="#extracted-data-region"
+          hx-swap="outerHTML"
+        />
       </label>
       <label class="flex flex-col gap-0.5">
         <span class="text-[11px] text-slate-500">Phone</span>
-        <input class="${inputCls}" name="customer_phone" value="${formatPhone(lead.customerPhoneE164) || lead.customerPhoneE164 || ''}" />
+        <input
+          class="${inputCls}"
+          name="customer_phone"
+          value="${phoneDisplay}"
+          hx-patch="${patchUrl}"
+          hx-trigger="blur changed"
+          hx-include="this"
+          hx-target="#extracted-data-region"
+          hx-swap="outerHTML"
+        />
       </label>
       <label class="flex flex-col gap-0.5 sm:col-span-2">
         <span class="text-[11px] text-slate-500">Email</span>
-        <input class="${inputCls}" name="customer_email" type="email" value="${lead.customerEmail ?? ''}" />
+        <input
+          class="${inputCls}"
+          name="customer_email"
+          type="email"
+          value="${lead.customerEmail ?? ''}"
+          hx-patch="${patchUrl}"
+          hx-trigger="blur changed"
+          hx-include="this"
+          hx-target="#extracted-data-region"
+          hx-swap="outerHTML"
+        />
       </label>
       <label class="flex flex-col gap-0.5 sm:col-span-2">
         <span class="text-[11px] text-slate-500">Address</span>
-        <input class="${inputCls}" name="customer_address" value="${lead.customerAddress ?? ''}" />
+        <input
+          class="${inputCls}"
+          name="customer_address"
+          value="${lead.customerAddress ?? ''}"
+          hx-patch="${patchUrl}"
+          hx-trigger="blur changed"
+          hx-include="this"
+          hx-target="#extracted-data-region"
+          hx-swap="outerHTML"
+        />
       </label>
       <label class="flex flex-col gap-0.5">
         <span class="text-[11px] text-slate-500">City</span>
-        <input class="${inputCls}" name="customer_city" value="${lead.customerCity ?? ''}" />
+        <input
+          class="${inputCls}"
+          name="customer_city"
+          value="${lead.customerCity ?? ''}"
+          hx-patch="${patchUrl}"
+          hx-trigger="blur changed"
+          hx-include="this"
+          hx-target="#extracted-data-region"
+          hx-swap="outerHTML"
+        />
       </label>
       <label class="flex flex-col gap-0.5">
         <span class="text-[11px] text-slate-500">ZIP</span>
-        <input class="${inputCls}" name="customer_zip" value="${lead.customerZip ?? ''}" />
+        <input
+          class="${inputCls}"
+          name="customer_zip"
+          value="${lead.customerZip ?? ''}"
+          hx-patch="${patchUrl}"
+          hx-trigger="blur changed"
+          hx-include="this"
+          hx-target="#extracted-data-region"
+          hx-swap="outerHTML"
+        />
       </label>
-      <div class="sm:col-span-2 flex items-center justify-between gap-3 pt-1 text-[11px]">
+      <div class="sm:col-span-2 pt-1 text-[11px]">
         ${lead.outOfServiceArea
           ? html`<span class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-slate-700" data-testid="service-area-out">⚠ Out of service area</span>`
           : html`<span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-800" data-testid="service-area-in">✓ In service area${lead.serviceAreaCounty ? ` · ${lead.serviceAreaCounty}` : ''}</span>`}
-        <button
-          class="text-brand-700 hover:underline font-medium"
-          type="submit"
-          data-testid="save-extracted-data"
-        >Save changes</button>
       </div>
-    </form>
+    </div>
   </div>`;
 }
 

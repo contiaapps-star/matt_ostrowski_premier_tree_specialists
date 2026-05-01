@@ -1,0 +1,15 @@
+{
+  "type": "message.received",
+  "message": {
+    "id": "msg_test_lsa_001",
+    "inboxId": "inbox_test_001",
+    "from": "noreply@google-business.com",
+    "to": ["premier3-pts-agent@agentmail.to"],
+    "subject": "New lead from Google Local Services Ads",
+    "text": "You have a new message from Diane Owens\n\nCustomer: Diane Owens\nPhone: (216) 555-0001\nLocation: Cleveland, OH 44113\nBusiness: Tree Service\nJob type: Tree trimming and pruning\n\nMessage:\nI have a big oak tree that I would like to have looked at. It will probably need trimming and I need a quote.\n\nReply to this customer through your Local Services Ads inbox:\nhttps://ads.google.com/lsa/conversation/abc123\n",
+    "headers": {
+      "Date": "Sat, 25 Apr 2026 14:32:18 -0400"
+    },
+    "receivedAt": "2026-04-25T18:32:18.000Z"
+  }
+}

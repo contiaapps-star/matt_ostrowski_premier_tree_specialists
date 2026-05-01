@@ -223,6 +223,56 @@ export const appSettings = sqliteTable('app_settings', {
     .default(sql`(unixepoch() * 1000)`),
 });
 
+export const AGENT_MAIL_PARSE_STATUSES = ['pending', 'parsed', 'unparseable', 'duplicate'] as const;
+export type AgentMailParseStatus = (typeof AGENT_MAIL_PARSE_STATUSES)[number];
+
+export const AGENT_MAIL_DETECTED_SOURCES = [
+  'google_lsa_email',
+  'answerforce_email',
+  'website_form_email',
+  'unknown',
+] as const;
+export type AgentMailDetectedSource = (typeof AGENT_MAIL_DETECTED_SOURCES)[number];
+
+/**
+ * Raw archive of every inbound message AgentMail delivers to our webhook.
+ * A row is written before parsing — even if the parser fails, the raw
+ * payload is preserved so the team has real data to debug against (per
+ * Zaki's "save everything that arrives" rule).
+ */
+export const agentMailMessages = sqliteTable(
+  'agent_mail_messages',
+  {
+    id: text('id').primaryKey(),
+    agentmailMessageId: text('agentmail_message_id').notNull(),
+    inboxId: text('inbox_id'),
+    receivedAt: integer('received_at', { mode: 'timestamp_ms' }).notNull(),
+    fromAddress: text('from_address'),
+    toAddresses: text('to_addresses'),
+    subject: text('subject'),
+    textBody: text('text_body'),
+    htmlBody: text('html_body'),
+    rawMime: text('raw_mime'),
+    headersJson: text('headers_json'),
+    detectedSource: text('detected_source'),
+    leadId: text('lead_id').references(() => leads.id, { onDelete: 'set null' }),
+    parseStatus: text('parse_status').notNull().default('pending'),
+    parseError: text('parse_error'),
+    rawPayload: text('raw_payload').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => ({
+    agentMailMessagesIdUnique: uniqueIndex('agent_mail_messages_agentmail_message_id_unique').on(
+      t.agentmailMessageId,
+    ),
+    agentMailMessagesReceivedIdx: index('agent_mail_messages_received_at_idx').on(t.receivedAt),
+    agentMailMessagesParseStatusIdx: index('agent_mail_messages_parse_status_idx').on(t.parseStatus),
+    agentMailMessagesLeadIdIdx: index('agent_mail_messages_lead_id_idx').on(t.leadId),
+  }),
+);
+
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
 export type LeadSourceEvent = typeof leadSourceEvents.$inferSelect;
@@ -241,3 +291,5 @@ export type ZipRow = typeof zipCodeToCounty.$inferSelect;
 export type NewZipRow = typeof zipCodeToCounty.$inferInsert;
 export type AppSettingsRow = typeof appSettings.$inferSelect;
 export type NewAppSettingsRow = typeof appSettings.$inferInsert;
+export type AgentMailMessageRow = typeof agentMailMessages.$inferSelect;
+export type NewAgentMailMessageRow = typeof agentMailMessages.$inferInsert;

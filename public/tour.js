@@ -1,8 +1,28 @@
 (function () {
   'use strict';
 
-  var TOUR_KEY = 'pts_tour_v2_done';
+  var TOUR_KEY = 'pts_tour_v3_done';
   var LOGO_URL = '/public/images/premier-tree-logo.png';
+
+  function readAgentMailAddress() {
+    // The settings page renders the live AgentMail address with this
+    // testid. The dashboard does NOT, so we cache the last value we saw
+    // (e.g. via a previous visit) in localStorage so the final tour step
+    // can show the address even when the user is on the inbox page.
+    try {
+      var node = document.querySelector('[data-testid="agent-mail-address"]');
+      if (node && node.textContent) {
+        var v = node.textContent.trim();
+        if (v) {
+          try { localStorage.setItem('pts_agent_mail_address', v); } catch (e) {}
+          return v;
+        }
+      }
+      return localStorage.getItem('pts_agent_mail_address') || '';
+    } catch (e) {
+      return '';
+    }
+  }
 
   function el(selector) {
     return document.querySelector(selector);
@@ -155,15 +175,69 @@
       {
         popover: {
           title: ' ',
-          description: heroPopover(
-            'What we need from you',
-            'To finish setup we need: (1) Forwarding rules pointing at the agent email above, (2) Google LSA API key (or set the LSA email forward), (3) ArboStar company ID + API key, (4) SendGrid + Agent Phone credentials. Email these to your Sagan contact and we’ll flip the switch.'
-          ),
+          description: finalChecklistPopover(),
           side: 'over',
           align: 'center',
+          onPopoverRender: function (popover) {
+            // Wire up the "Show me" button after driver.js renders the popover.
+            try {
+              var btn = popover.wrapper.querySelector('[data-tour-action="open-instructions"]');
+              if (btn) {
+                btn.addEventListener('click', function (ev) {
+                  ev.preventDefault();
+                  try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) {}
+                  // Navigate to settings#inbound with a hash that the
+                  // settings page bootstrap will use to auto-open the
+                  // collapsible Gmail-instructions <details>.
+                  location.href = '/settings#inbound-instructions-open';
+                });
+              }
+            } catch (e) {}
+          },
         },
       },
     ];
+  }
+
+  function finalChecklistPopover() {
+    var address = readAgentMailAddress();
+    var addressLine = address
+      ? '<div class="pts-tour-address-pill" data-testid="tour-final-address">' +
+          '<span class="pts-tour-address-label">Forward to</span>' +
+          '<code>' + escapeHtml(address) + '</code>' +
+        '</div>'
+      : '<div class="pts-tour-address-pill pts-tour-address-pending">' +
+          '<span class="pts-tour-address-label">Forwarding address</span>' +
+          '<code>provisioning…</code>' +
+        '</div>';
+
+    return (
+      '<div class="pts-tour-hero">' +
+        '<img src="' + LOGO_URL + '" alt="Premier Tree Specialists" class="pts-tour-logo" />' +
+        '<div class="pts-tour-hero-body">' +
+          '<div class="pts-tour-hero-eyebrow">What we need from you</div>' +
+          '<div class="pts-tour-hero-title">3 forwarding rules and you’re live</div>' +
+          '<div class="pts-tour-hero-desc">Set Gmail filters that forward each lead source to the agent inbox below. Every email that lands there is archived and parsed into a lead automatically.</div>' +
+          addressLine +
+          '<ul class="pts-tour-checklist" data-testid="tour-final-checklist">' +
+            '<li><span class="pts-tour-check">☐</span> Forward Google LSA notifications</li>' +
+            '<li><span class="pts-tour-check">☐</span> Forward AnswerForce summaries</li>' +
+            '<li><span class="pts-tour-check">☐</span> Forward website-form notifications</li>' +
+          '</ul>' +
+          '<div class="pts-tour-cta-row">' +
+            '<button type="button" class="pts-tour-cta" data-tour-action="open-instructions">Show me how in Gmail →</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function getDriverFactory() {

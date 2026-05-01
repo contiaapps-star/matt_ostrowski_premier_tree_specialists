@@ -1,0 +1,12 @@
+{
+  "type": "message.received",
+  "message": {
+    "id": "msg_test_af_002",
+    "inboxId": "inbox_test_001",
+    "from": "notifications@answerforce.com",
+    "to": ["premier3-pts-agent@agentmail.to"],
+    "subject": "AnswerForce — Message Taken for Premier Tree Specialists",
+    "text": "AnswerForce After-Hours Call Summary\n\nCustomer: Bob Thompson\nPhone: (440) 555-0044\nLocation: Lakewood, OH 44107\n\nMessage Taken:\nCustomer called about a fallen tree in the back yard. Wants someone to come out for an estimate as soon as possible.\n\nReceived: April 28, 2026 11:42 PM EDT\n",
+    "receivedAt": "2026-04-29T03:42:00.000Z"
+  }
+}

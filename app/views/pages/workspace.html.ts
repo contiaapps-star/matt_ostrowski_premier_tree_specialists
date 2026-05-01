@@ -150,7 +150,7 @@ export function workspacePage(props: WorkspaceProps) {
             url.searchParams.delete('tour');
             history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
           } else {
-            var done = localStorage.getItem('pts_tour_v2_done');
+            var done = localStorage.getItem('pts_tour_v3_done');
             if (!done && location.pathname === '/' && window.startTour) {
               setTimeout(function(){ window.startTour({ auto: true }); }, 800);
             }

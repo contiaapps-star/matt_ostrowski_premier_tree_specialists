@@ -9,6 +9,7 @@ import { bootstrapDemoLeadsIfNeeded } from './lib/demo-leads-bootstrap.js';
 import { bootstrapReferenceDataIfNeeded } from './lib/reference-data-bootstrap.js';
 import { forceReseed } from './lib/force-reseed.js';
 import { logger } from './lib/logger.js';
+import { bootstrapAgentMail } from './services/agentmail-bootstrap.service.js';
 
 export interface StartedServer {
   server: ServerType;
@@ -42,6 +43,12 @@ export async function startServer(port: number = config.PORT): Promise<StartedSe
       bootstrapAdminIfNeeded(getDb(), config);
       bootstrapDemoLeadsIfNeeded(getDb());
     }
+    // Provision the AgentMail inbox + webhook idempotently. Any failure is
+    // logged but never blocks server startup — /settings falls back to
+    // "Pending" and the webhook simply won't fire.
+    void bootstrapAgentMail().catch((err) => {
+      logger.error({ err }, '[agentmail-bootstrap] unexpected error');
+    });
   }
   const app = createApp();
 

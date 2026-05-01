@@ -1,0 +1,12 @@
+{
+  "type": "message.received",
+  "message": {
+    "id": "msg_test_garbage_003",
+    "inboxId": "inbox_test_001",
+    "from": "newsletter@randomspammer.example",
+    "to": ["premier3-pts-agent@agentmail.to"],
+    "subject": "🎉 Special offer just for you!",
+    "text": "Hey there,\n\nThis is a marketing newsletter that has nothing to do with tree services. Click here for your free smoothie!\n\nUnsubscribe: https://example.com/unsubscribe\n",
+    "receivedAt": "2026-04-29T10:00:00.000Z"
+  }
+}

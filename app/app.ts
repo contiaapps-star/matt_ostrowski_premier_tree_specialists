@@ -9,6 +9,7 @@ import { authRoute } from './routes/auth.js';
 import { workspaceRoute } from './routes/workspace.js';
 import { leadsRoute } from './routes/leads.js';
 import { settingsRoute } from './routes/settings.js';
+import { adminArchiveRoute } from './routes/admin-archive.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestLogger } from './middleware/request-logger.js';
 import { notFoundPage } from './views/pages/errors.html.js';
@@ -94,6 +95,7 @@ export function createApp(): Hono {
   app.route('/', workspaceRoute);
   app.route('/', leadsRoute);
   app.route('/', settingsRoute);
+  app.route('/', adminArchiveRoute);
 
   app.notFound((c) => {
     if (c.req.header('accept')?.includes('text/html')) {

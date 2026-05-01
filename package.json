@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.7",
+    "agentmail": "^0.0.20",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^11.5.0",
     "dotenv": "^16.4.5",

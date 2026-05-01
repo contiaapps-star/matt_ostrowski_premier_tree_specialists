@@ -40,35 +40,97 @@ function flashBanner(flash: SettingsPageProps['flash']) {
 
 function inboundSection(agentMailAddress: string) {
   const hasAddress = agentMailAddress.trim().length > 0;
+  const safeAddress = escapeAttr(agentMailAddress);
   return html`<section id="inbound" class="space-y-3" data-testid="inbound-section" data-tour="settings-inbound">
     <header>
       <h2 class="text-base font-semibold text-slate-900 flex items-center gap-1.5">
         <span aria-hidden="true">📬</span> Inbound Email
       </h2>
-      <p class="text-xs text-slate-500">Forward your incoming leads to this address. Set up a Gmail filter that forwards Google LSA notifications, AnswerForce summaries, and your website-form emails to this single inbox — the system parses everything from there.</p>
+      <p class="text-xs text-slate-500">Forward your incoming leads to this address. Set up Gmail filters that forward Google LSA notifications, AnswerForce summaries, and your website-form emails to this single inbox — the system parses everything from there and creates leads automatically.</p>
     </header>
-    <div class="rounded-lg border border-brand-200 bg-brand-50/40 px-4 py-3 space-y-2" data-testid="inbound-card">
+    <div class="rounded-lg border border-brand-200 bg-brand-50/40 px-4 py-3 space-y-3" data-testid="inbound-card">
       ${hasAddress
         ? html`<div class="flex flex-wrap items-center justify-between gap-2">
             <code class="rounded bg-white border border-brand-200 px-2.5 py-1 text-sm font-mono text-brand-800" data-testid="agent-mail-address">${agentMailAddress}</code>
-            <button
-              type="button"
-              class="inline-flex items-center gap-1 rounded-md border border-brand-600 bg-white px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
-              data-testid="agent-mail-copy"
-              onclick="(function(b){var v='${escapeAttr(agentMailAddress)}';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(function(){b.textContent='✓ Copied';setTimeout(function(){b.innerHTML='\\u{1F4CB} Copy';},1500);});}})(this)"
-            >📋 Copy</button>
+            <div class="flex items-center gap-2">
+              <a
+                href="/admin/agent-mail-archive"
+                class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                data-testid="agent-mail-archive-link"
+                title="View archived messages"
+              >📥 View archive</a>
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 rounded-md border border-brand-600 bg-white px-2.5 py-1 text-xs font-medium text-brand-700 hover:bg-brand-50"
+                data-testid="agent-mail-copy"
+                onclick="(function(b){var v='${safeAddress}';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(v).then(function(){b.textContent='✓ Copied';setTimeout(function(){b.innerHTML='\\u{1F4CB} Copy';},1500);});}})(this)"
+              >📋 Copy</button>
+            </div>
           </div>`
         : html`<div class="text-sm text-slate-700" data-testid="agent-mail-pending">
             <span class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700">Pending</span>
-            <span class="ml-2 text-xs text-slate-500">Sara will provision the agent-mail address and email it to you shortly.</span>
+            <span class="ml-2 text-xs text-slate-500">Set <code class="bg-white px-1 rounded">AGENT_MAIL_API_KEY</code> in your env to provision the inbox automatically on next boot.</span>
           </div>`}
       <ul class="text-xs text-slate-600 space-y-0.5 list-disc pl-5">
         <li>Forward Google LSA notifications (Lead messages) to this address.</li>
         <li>Forward AnswerForce email summaries to this address.</li>
-        <li>Set your website form / Vercel webhook to deliver to this address (or POST to <code class="bg-white px-1 rounded">/api/intake/website-form</code> directly).</li>
+        <li>Forward website-form notifications to this address (or POST to <code class="bg-white px-1 rounded">/api/intake/website-form</code> directly).</li>
       </ul>
+      ${hasAddress ? gmailInstructionsAccordion(agentMailAddress) : html``}
     </div>
   </section>`;
+}
+
+function gmailInstructionsAccordion(agentMailAddress: string) {
+  return html`<details class="group rounded-md border border-brand-200 bg-white" data-testid="inbound-instructions" data-tour="settings-inbound-instructions">
+    <summary class="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-brand-800 hover:bg-brand-50 flex items-center justify-between">
+      <span><span aria-hidden="true">🛠</span> How to set up Gmail forwarding</span>
+      <span class="text-xs text-brand-600 group-open:hidden">Show steps</span>
+      <span class="text-xs text-brand-600 hidden group-open:inline">Hide</span>
+    </summary>
+    <div class="px-4 py-3 space-y-4 text-xs text-slate-700 border-t border-brand-200">
+      <div>
+        <h4 class="font-semibold text-slate-900 mb-1">1. Add <code class="bg-slate-100 px-1 rounded">${agentMailAddress}</code> as a forwarding address (one time)</h4>
+        <ol class="list-decimal pl-5 space-y-0.5">
+          <li>In Gmail, click the gear ⚙ → <b>See all settings</b>.</li>
+          <li>Open the <b>Forwarding and POP/IMAP</b> tab.</li>
+          <li>Click <b>Add a forwarding address</b> and paste <code class="bg-slate-100 px-1 rounded">${agentMailAddress}</code>.</li>
+          <li>Gmail sends a confirmation email to that address. The team at Sagan / Sara confirms it on the AgentMail side and you'll see it move to <i>verified</i>.</li>
+          <li>Leave the radio at <b>Disable forwarding</b> at the bottom — we forward per-filter, not the whole inbox.</li>
+        </ol>
+      </div>
+      <div>
+        <h4 class="font-semibold text-slate-900 mb-1">2. Forward Google LSA leads</h4>
+        <ol class="list-decimal pl-5 space-y-0.5">
+          <li>In Settings, open the <b>Filters and Blocked Addresses</b> tab.</li>
+          <li>Click <b>Create a new filter</b>.</li>
+          <li>In the <b>From</b> field paste your LSA notifier address (typically <code class="bg-slate-100 px-1 rounded">noreply@google-business.com</code> or <code class="bg-slate-100 px-1 rounded">noreply@business.google.com</code> — check a recent LSA email to confirm).</li>
+          <li>Click <b>Create filter</b>.</li>
+          <li>Check ☑ <b>Forward it to:</b> and pick <code class="bg-slate-100 px-1 rounded">${agentMailAddress}</code>.</li>
+          <li>Optionally check ☑ <b>Also apply filter to matching conversations</b> so historical LSA emails replay through the system.</li>
+          <li>Click <b>Create filter</b>.</li>
+        </ol>
+      </div>
+      <div>
+        <h4 class="font-semibold text-slate-900 mb-1">3. Forward AnswerForce summaries</h4>
+        <ol class="list-decimal pl-5 space-y-0.5">
+          <li>Same flow as step 2, but use <code class="bg-slate-100 px-1 rounded">notifications@answerforce.com</code> in the <b>From</b> field.</li>
+          <li>If your AnswerForce account uses a different sender, check a recent message summary email to copy the exact address.</li>
+        </ol>
+      </div>
+      <div>
+        <h4 class="font-semibold text-slate-900 mb-1">4. Forward website-form notifications</h4>
+        <ol class="list-decimal pl-5 space-y-0.5">
+          <li>Identify the address that delivers your contact-form submissions (Vercel, WordPress, Formspree, etc.).</li>
+          <li>Same Gmail filter flow as step 2 with that <b>From</b> address.</li>
+          <li>Alternative (recommended for new forms): point the form's webhook directly at <code class="bg-slate-100 px-1 rounded">POST /api/intake/website-form</code> with the <code class="bg-slate-100 px-1 rounded">x-webhook-secret</code> header — the system parses the JSON without needing email at all.</li>
+        </ol>
+      </div>
+      <div class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+        <p class="text-amber-900"><b>Heads up:</b> every email forwarded to this address is archived in full — even if the parser can't extract a lead. That gives the team real samples to tune the parsers against. Open <a href="/admin/agent-mail-archive" class="underline font-semibold">📥 View archive</a> to inspect what's arrived.</p>
+      </div>
+    </div>
+  </details>`;
 }
 
 function businessRulesSection(rules: BusinessRules, csrf: string) {
@@ -153,8 +215,8 @@ function aiSettingsSection(ai: AiSettings, csrf: string) {
         </label>
         <label class="flex flex-col">
           <span class="text-xs text-slate-500">Max tokens</span>
-          <span class="text-[11px] text-slate-400 mb-1">Maximum length of generated response.</span>
-          <input type="number" min="50" max="4000" name="max_tokens" value="${ai.maxTokens}" class="pts-input" data-testid="ai-max-tokens" />
+          <span class="text-[11px] text-slate-400 mb-1">Maximum length of generated response. Recommended 400–500 for SMS/email replies.</span>
+          <input type="number" min="50" max="1000" name="max_tokens" value="${ai.maxTokens}" class="pts-input" data-testid="ai-max-tokens" />
         </label>
         <label class="flex flex-col">
           <span class="text-xs text-slate-500">Temperature</span>
@@ -231,6 +293,17 @@ function tourResumeBootstrap() {
             setTimeout(function(){ window.startTour({ resumeStep: parseInt(resume, 10) }); }, 250);
             url.searchParams.delete('tour');
             history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+          }
+          // When the final tour step's CTA navigates here, auto-open the
+          // Gmail-instructions <details> and scroll it into view so the
+          // client lands directly on the steps they need.
+          if (window.location.hash === '#inbound-instructions-open') {
+            var det = document.querySelector('[data-testid="inbound-instructions"]');
+            if (det) {
+              det.setAttribute('open', '');
+              setTimeout(function(){ det.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+            }
+            history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + '#inbound');
           }
         } catch(e) {}
       }
